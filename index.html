@@ -1,236 +1,88 @@
 <!DOCTYPE html>
 <html lang="mn">
+
 <head>
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Хяналтын Самбар</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<style>
-/* ── RESET & BASE ── */
-*{margin:0;padding:0;box-sizing:border-box}
-body{font-family:Arial, Helvetica, sans-serif,Tahoma,sans-serif;background:#eef0f5;color:#222;height:100vh;display:flex;overflow:hidden}
-
-/* ── LOGIN PAGE ── */
-#loginPage{
-  position:fixed;inset:0;z-index:9999;
-  display:flex;align-items:center;justify-content:center;
-  background:linear-gradient(135deg,#1a2d45 0%,#0097a7 100%);
-}
-.login-card{
-  background:#fff;border-radius:14px;padding:42px 38px;
-  width:360px;box-shadow:0 20px 60px rgba(0,0,0,.3);
-}
-.login-brand{display:flex;align-items:center;gap:11px;margin-bottom:26px}
-.login-brand-icon{width:42px;height:42px;background:#00bcd4;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:20px;color:#fff}
-.login-brand-text{font-size:16px;font-weight:800;color:#1a2d45}
-.login-h{font-size:21px;font-weight:800;color:#1a2d45;margin-bottom:3px}
-.login-sub{font-size:13px;color:#888;margin-bottom:26px}
-.f-label{display:block;font-size:11px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:#888;margin-bottom:6px}
-.f-input{width:100%;padding:11px 13px;border:1.5px solid #e0e0e0;border-radius:8px;font-size:14px;font-family:inherit;outline:none;transition:.2s;margin-bottom:14px}
-.f-input:focus{border-color:#00bcd4;box-shadow:0 0 0 3px rgba(0,188,212,.12)}
-.login-btn{width:100%;padding:12px;background:#00bcd4;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;transition:.2s}
-.login-btn:hover{background:#0097a7}
-.login-err{color:#e53935;font-size:13px;text-align:center;margin-top:10px;min-height:18px}
-
-/* ── LAYOUT ── */
-.sidebar{
-  width:245px;background:#1a2d45;color:#fff;
-  display:none;flex-direction:column;flex-shrink:0;
-  overflow-y:auto;
-}
-.sb-brand{display:flex;align-items:center;gap:11px;padding:18px 18px 14px;border-bottom:1px solid rgba(255,255,255,.08)}
-.sb-brand-icon{width:36px;height:36px;background:#00bcd4;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:17px}
-.sb-brand-text{font-size:14px;font-weight:800}
-.sb-section{padding:14px 18px 4px;font-size:10px;font-weight:700;letter-spacing:2px;color:rgba(255,255,255,.3)}
-.sb-item{
-  display:flex;align-items:center;gap:10px;
-  padding:11px 18px;font-size:13.5px;color:rgba(255,255,255,.65);
-  cursor:pointer;border-left:3px solid transparent;transition:.15s;
-}
-.sb-item:hover{background:rgba(255,255,255,.07);color:#fff}
-.sb-item.on{background:#00bcd4;color:#fff;font-weight:700;border-left-color:#fff}
-.sb-icon{width:19px;text-align:center;font-size:15px}
-.sb-badge{margin-left:auto;background:rgba(255,255,255,.18);border-radius:11px;padding:2px 8px;font-size:11px;font-weight:700}
-.sb-item.on .sb-badge{background:rgba(0,0,0,.2)}
-.sb-bottom{margin-top:auto;border-top:1px solid rgba(255,255,255,.08);padding:6px 0}
-
-/* ── MAIN ── */
-.main{flex:1;display:none;flex-direction:column;overflow:hidden}
-.topbar{
-  height:52px;background:#fff;border-bottom:1px solid #e0e0e0;
-  padding:0 26px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;
-}
-.topbar-crumb{font-size:13px;color:#999}
-.topbar-crumb b{color:#1a2d45;font-weight:700}
-.topbar-right{display:flex;align-items:center;gap:12px}
-.t-user{font-size:13px;color:#555}
-.t-role{padding:3px 10px;border-radius:11px;font-size:11px;font-weight:700;background:#e0f7fa;color:#00838f}
-.t-logout{padding:6px 13px;border:1.5px solid #ddd;border-radius:7px;background:#fff;font-size:12px;cursor:pointer;color:#555;font-family:inherit;transition:.15s}
-.t-logout:hover{background:#e53935;color:#fff;border-color:#e53935}
-.content{flex:1;padding:22px 26px;overflow-y:auto}
-
-/* ── SECTION ── */
-.sec{display:none}
-.sec.on{display:block;animation:up .25s ease}
-@keyframes up{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
-.sec-crumb{font-size:13px;color:#999;margin-bottom:18px}
-.sec-crumb b{color:#1a2d45}
-
-/* ── STAT CARDS ── */
-.stats{display:grid;grid-template-columns:repeat(5,1fr);gap:13px;margin-bottom:20px}
-.stat{border-radius:11px;padding:19px 16px;color:#fff;position:relative;overflow:hidden;cursor:default}
-.stat::after{content:'';position:absolute;right:-12px;top:-12px;width:72px;height:72px;border-radius:50%;background:rgba(255,255,255,.13)}
-.stat-n{font-size:36px;font-weight:900;line-height:1.1}
-.stat-l{font-size:12px;margin-top:5px;opacity:.93}
-.s-cyan{background:linear-gradient(135deg,#00bcd4,#0097a7)}
-.s-red{background:linear-gradient(135deg,#ef5350,#b71c1c)}
-.s-orange{background:linear-gradient(135deg,#ff7043,#bf360c)}
-.s-amber{background:linear-gradient(135deg,#ffa000,#e65100)}
-.s-green{background:linear-gradient(135deg,#43a047,#1b5e20)}
-
-/* ── CHARTS ── */
-.charts-row{display:grid;grid-template-columns:2fr 1.2fr 1.4fr;gap:14px;margin-bottom:14px}
-.charts-row2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
-.chart-card{background:#fff;border-radius:11px;padding:18px;box-shadow:0 1px 4px rgba(0,0,0,.07)}
-.chart-title{font-size:10px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:#1a2d45;margin-bottom:12px}
-
-/* ── TOOLBAR ── */
-.toolbar{display:flex;gap:9px;margin-bottom:13px;flex-wrap:wrap;align-items:center}
-.t-search{flex:1;min-width:180px;padding:9px 13px;border:1.5px solid #ddd;border-radius:8px;font-size:13px;font-family:inherit;outline:none;transition:.2s}
-.t-search:focus{border-color:#00bcd4}
-.t-filter{padding:9px 11px;border:1.5px solid #ddd;border-radius:8px;font-size:13px;font-family:inherit;background:#fff;cursor:pointer;outline:none}
-.btn{display:inline-flex;align-items:center;gap:6px;padding:9px 15px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;border:none;font-family:inherit;transition:.15s}
-.b-cyan{background:#00bcd4;color:#fff}.b-cyan:hover{background:#0097a7}
-.b-green{background:#43a047;color:#fff}.b-green:hover{background:#2e7d32}
-.b-amber{background:#ffa000;color:#fff}.b-amber:hover{background:#e65100}
-.b-red{background:#e53935;color:#fff}.b-red:hover{background:#b71c1c}
-.b-ghost{background:#fff;color:#555;border:1.5px solid #ddd}.b-ghost:hover{background:#f5f5f5}
-.btn-sm{padding:5px 11px;font-size:12px}
-
-/* ── TABLE ── */
-.tbl-wrap{background:#fff;border-radius:11px;box-shadow:0 1px 4px rgba(0,0,0,.07);overflow:hidden}
-table{width:100%;border-collapse:collapse}
-thead tr{background:#f4f6f9}
-th{padding:11px 13px;text-align:left;font-size:10.5px;font-weight:800;letter-spacing:.8px;text-transform:uppercase;color:#888;border-bottom:1px solid #e8e8e8}
-td{padding:11px 13px;font-size:13px;border-bottom:1px solid #f0f0f0;vertical-align:middle}
-tr:last-child td{border-bottom:none}
-tr:hover td{background:#fafbfc}
-.chip{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700}
-.c-low{background:#e8f5e9;color:#2e7d32}
-.c-mid{background:#fff8e1;color:#f57f17}
-.c-high{background:#fce4ec;color:#c62828}
-.c-critical{background:#fce4ec;color:#b71c1c;border:1px solid #f44336}
-.c-new{background:#e3f2fd;color:#1565c0}
-.c-progress{background:#fff8e1;color:#f57f17}
-.c-done{background:#e8f5e9;color:#2e7d32}
-.row-acts{display:flex;gap:5px}
-.pg{display:flex;align-items:center;gap:6px;margin-top:12px;justify-content:flex-end;flex-wrap:wrap}
-.pg-info{font-size:12px;color:#999;margin-right:auto}
-.pg-btn{padding:6px 11px;border-radius:6px;border:1.5px solid #ddd;background:#fff;font-size:12px;cursor:pointer;font-family:inherit;transition:.15s}
-.pg-btn:hover,.pg-btn.on{background:#00bcd4;color:#fff;border-color:#00bcd4}
-
-/* ── MODAL ── */
-.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1000;align-items:center;justify-content:center;backdrop-filter:blur(3px)}
-.overlay.open{display:flex}
-.modal{background:#fff;border-radius:13px;padding:26px 26px 22px;width:480px;max-width:95vw;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.2);animation:up .2s ease}
-.modal-title{font-size:16px;font-weight:800;color:#1a2d45;margin-bottom:20px}
-.fg{display:grid;grid-template-columns:1fr 1fr;gap:13px}
-.fg-full{grid-column:1/-1}
-.fl{display:flex;flex-direction:column;gap:5px}
-.fl label{font-size:10.5px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:#888}
-.fl input,.fl select{padding:10px 12px;border:1.5px solid #e0e0e0;border-radius:8px;font-size:13.5px;font-family:inherit;outline:none;transition:.2s;color:#222}
-.fl input:focus,.fl select:focus{border-color:#00bcd4;box-shadow:0 0 0 3px rgba(0,188,212,.1)}
-.m-footer{display:flex;gap:9px;justify-content:flex-end;margin-top:20px;padding-top:16px;border-top:1px solid #f0f0f0}
-
-/* ── EMAIL ── */
-.email-wrap{max-width:600px}
-.email-card{background:#fff;border-radius:11px;padding:26px;box-shadow:0 1px 4px rgba(0,0,0,.07)}
-.email-card h2{font-size:17px;font-weight:800;color:#1a2d45;margin-bottom:4px}
-.email-card p{font-size:13px;color:#888;margin-bottom:22px}
-.fl textarea{padding:10px 12px;border:1.5px solid #e0e0e0;border-radius:8px;font-size:13.5px;font-family:inherit;outline:none;resize:vertical;min-height:110px;transition:.2s}
-.fl textarea:focus{border-color:#00bcd4;box-shadow:0 0 0 3px rgba(0,188,212,.1)}
-
-/* ── TOAST ── */
-.toast{position:fixed;bottom:22px;right:22px;padding:12px 18px;border-radius:9px;font-size:13px;color:#fff;z-index:9999;display:none;align-items:center;gap:9px;box-shadow:0 4px 18px rgba(0,0,0,.25);animation:up .3s ease}
-.toast.show{display:flex}
-.t-ok{background:#2e7d32}
-.t-err{background:#c62828}
-.empty-row td{text-align:center;padding:40px;color:#aaa}
-</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Хяналтын Самбар</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <link rel="stylesheet" href="style.css">
+  
 </head>
+
 <body>
 
-<!-- ══ LOGIN ══ -->
-<div id="loginPage">
-  <div class="login-card">
-    <div class="login-brand">
-      <div class="login-brand-icon">📋</div>
-      <div class="login-brand-text">Хяналтын Систем</div>
-    </div>
-    <div class="login-h">Нэвтрэх</div>
-    <div class="login-sub">Хэрэглэгчийн мэдээллээ оруулна уу</div>
-    <label class="f-label">Хэрэглэгчийн нэр</label>
-    <input class="f-input" id="lUser" type="text" placeholder="admin"/>
-    <label class="f-label">Нууц үг</label>
-    <input class="f-input" id="lPass" type="password" placeholder=""/>
-    <button class="login-btn" onclick="doLogin()">Нэвтрэх →</button>
-    <div class="login-err" id="lErr"></div>
-  </div>
-</div>
-
-<!-- ══ SIDEBAR ══ -->
-<div class="sidebar" id="sidebar">
-  <div class="sb-brand">
-    <div class="sb-brand-icon">📋</div>
-    <div class="sb-brand-text">Хяналтын Самбар</div>
-  </div>
-
-  <div class="sb-section">ҮНДСЭН</div>
-  <div class="sb-item on" onclick="nav('dashboard',this)">
-    <span class="sb-icon">📊</span> Тайлан
-  </div>
-  <div class="sb-item" onclick="nav('violations',this)">
-    <span class="sb-icon">📋</span> Бүх зөрчил
-    <span class="sb-badge" id="navBadge">0</span>
-  </div>
-
-  <div class="sb-section">СИСТЕМ</div>
-  <div class="sb-item" onclick="nav('email',this)">
-    <span class="sb-icon">✉️</span> Имэйл илгээх
-  </div>
-
-  <div class="sb-bottom">
-    <div class="sb-item" onclick="doLogout()">
-      <span class="sb-icon">🚪</span> Системээс гарах
-    </div>
-  </div>
-</div>
-
-<!-- ══ MAIN ══ -->
-<div class="main" id="mainArea">
-  <div class="topbar">
-    <div class="topbar-crumb">Нүүр / <b id="pageTitle">Ерөнхий тойм</b></div>
-    <div class="topbar-right">
-      <span class="t-user" id="tUser"></span>
-      <span class="t-role" id="tRole"></span>
-      <button class="t-logout" onclick="doLogout()">Гарах</button>
+  <!-- ══ LOGIN ══ -->
+  <div id="loginPage">
+    <div class="login-card">
+      <div class="login-brand">
+        <div class="login-brand-icon">📋</div>
+        <div class="login-brand-text">Хяналтын Систем</div>
+      </div>
+      <div class="login-h">Нэвтрэх</div>
+      <div class="login-sub">Хэрэглэгчийн мэдээллээ оруулна уу</div>
+      <label class="f-label">Хэрэглэгчийн нэр</label>
+      <input class="f-input" id="lUser" type="text" placeholder="admin" />
+      <label class="f-label">Нууц үг</label>
+      <input class="f-input" id="lPass" type="password" placeholder="" />
+      <button class="login-btn" onclick="doLogin()">Нэвтрэх →</button>
+      <div class="login-err" id="lErr"></div>
     </div>
   </div>
 
-  <div class="content">
+  <!-- ══ SIDEBAR ══ -->
+  <div class="sidebar" id="sidebar">
+    <div class="sb-brand">
+      <div class="sb-brand-icon">📋</div>
+      <div class="sb-brand-text">Хяналтын Самбар</div>
+    </div>
 
-    <!-- ── DASHBOARD ── -->
-    <div class="sec on" id="sec-dashboard">
-      <div class="sec-crumb">Нүүр / <b>Ерөнхий тойм</b></div>
+    <div class="sb-section">ҮНДСЭН</div>
+    <div class="sb-item on" onclick="nav('dashboard',this)">
+      <span class="sb-icon">📊</span> Тайлан
+    </div>
+    <div class="sb-item" onclick="nav('violations',this)">
+      <span class="sb-icon">📋</span> Бүх зөрчил
+      <span class="sb-badge" id="navBadge">0</span>
+    </div>
 
-      <!-- stat cards -->
-      <div class="stats" id="statCards"></div>
+    <div class="sb-section">СИСТЕМ</div>
+    <div class="sb-item" onclick="nav('email',this)">
+      <span class="sb-icon">✉️</span> Имэйл илгээх
+    </div>
 
-  
+    <div class="sb-bottom">
+      <div class="sb-item" onclick="doLogout()">
+        <span class="sb-icon">🚪</span> Системээс гарах
+      </div>
+    </div>
+  </div>
 
-      <!-- chart row 2 -->
-      <!-- <div class="charts-row2">
+  <!-- ══ MAIN ══ -->
+  <div class="main" id="mainArea">
+    <div class="topbar">
+      <div class="topbar-crumb">Нүүр / <b id="pageTitle">Ерөнхий тойм</b></div>
+      <div class="topbar-right">
+        <span class="t-user" id="tUser"></span>
+        <span class="t-role" id="tRole"></span>
+        <button class="t-logout" onclick="doLogout()">Гарах</button>
+      </div>
+    </div>
+
+    <div class="content">
+
+      <!-- ── DASHBOARD ── -->
+      <div class="sec on" id="sec-dashboard">
+        <div class="sec-crumb">Нүүр / <b>Ерөнхий тойм</b></div>
+
+        <!-- stat cards -->
+        <div class="stats" id="statCards"></div>
+
+
+
+        <!-- chart row 2 -->
+        <!-- <div class="charts-row2">
         <div class="chart-card">
           <div class="chart-title">Сарын хандлага</div>
           <canvas id="cTrend" height="140"></canvas>
@@ -241,309 +93,324 @@ tr:hover td{background:#fafbfc}
         </div>
       </div> -->
 
-      <!-- export from dashboard -->
-      <div style="display:flex;gap:9px;margin-top:4px">
-        <button class="btn b-green" onclick="exportCSV()">⬇ CSV татах</button>
-        <button class="btn b-amber" onclick="exportXLS()">⬇ Excel татах</button>
+        <!-- export from dashboard -->
+        <div style="display:flex;gap:9px;margin-top:4px">
+          <button class="btn b-green" onclick="exportCSV()">⬇ CSV татах</button>
+          <button class="btn b-amber" onclick="exportXLS()">⬇ Excel татах</button>
+        </div>
       </div>
-    </div>
 
-    <!-- ── VIOLATIONS (CRUD) ── -->
-    <div class="sec" id="sec-violations">
-      <div class="sec-crumb">Нүүр / <b>Бүх зөрчил</b></div>
-      <div class="toolbar">
-        <input class="t-search" id="srch" placeholder="🔍 Нэр, төрлөөр хайх…" oninput="renderTbl()"/>
-        <select class="t-filter" id="fSev" onchange="renderTbl()">
-          <option value="">Эрсдэл — бүгд</option>
-          <option value="low">Бага</option>
-          <option value="mid">Дунд</option>
-          <option value="high">Өндөр</option>
-          <option value="critical">Маш өндөр</option>
-        </select>
-        <select class="t-filter" id="fStat" onchange="renderTbl()">
-          <option value="">Төлөв — бүгд</option>
-          <option value="new">Шинэ</option>
-          <option value="progress">Явцтай</option>
-          <option value="done">Дууссан</option>
-        </select>
-        <button class="btn b-green" onclick="exportCSV()">⬇ CSV</button>
-        <button class="btn b-amber" onclick="exportXLS()">⬇ Excel</button>
-        <button class="btn b-cyan" onclick="openAdd()">＋ Нэмэх</button>
+      <!-- ── VIOLATIONS (CRUD) ── -->
+      <div class="sec" id="sec-violations">
+        <div class="sec-crumb">Нүүр / <b>Бүх зөрчил</b></div>
+        <div class="toolbar">
+          <input class="t-search" id="srch" placeholder="🔍 Нэр, төрлөөр хайх…" oninput="renderTbl()" />
+          <select class="t-filter" id="fSev" onchange="renderTbl()">
+            <option value="">Эрсдэл — бүгд</option>
+            <option value="low">Бага</option>
+            <option value="mid">Дунд</option>
+            <option value="high">Өндөр</option>
+            <option value="critical">Маш өндөр</option>
+          </select>
+          <select class="t-filter" id="fStat" onchange="renderTbl()">
+            <option value="">Төлөв — бүгд</option>
+            <option value="new">Шинэ</option>
+            <option value="progress">Явцтай</option>
+            <option value="done">Дууссан</option>
+          </select>
+          <button class="btn b-green" onclick="exportCSV()">⬇ CSV</button>
+          <button class="btn b-amber" onclick="exportXLS()">⬇ Excel</button>
+          <button class="btn b-cyan" onclick="openAdd()">＋ Нэмэх</button>
+        </div>
+        <div class="tbl-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Нэр / Хариуцагч</th>
+                <th>Төрөл</th>
+                <th>Эрсдэл</th>
+                <th>Огноо</th>
+                <th>Төлөв</th>
+                <th>Үйлдэл</th>
+              </tr>
+            </thead>
+            <tbody id="tBody"></tbody>
+          </table>
+        </div>
+        <div class="pg" id="pgBar"></div>
       </div>
-      <div class="tbl-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>#</th><th>Нэр / Хариуцагч</th><th>Төрөл</th>
-              <th>Эрсдэл</th><th>Огноо</th><th>Төлөв</th><th>Үйлдэл</th>
-            </tr>
-          </thead>
-          <tbody id="tBody"></tbody>
-        </table>
-      </div>
-      <div class="pg" id="pgBar"></div>
-    </div>
 
-    <!-- ── EMAIL ── -->
-    <div class="sec" id="sec-email">
-      <div class="sec-crumb">Нүүр / <b>Имэйл илгээх</b></div>
-      <div class="email-wrap">
-        <div class="email-card">
-          <h2>✉️ Имэйл илгээх</h2>
-          <p>Хариуцагч болон удирдлагад мэдэгдэл илгээнэ үү</p>
-          <div class="fl" style="margin-bottom:13px">
-            <label>Хүлээн авагч (To)</label>
-            <input id="eTo" type="email" placeholder="example@company.mn"/>
-          </div>
-          <div class="fl" style="margin-bottom:13px">
-            <label>Гарчиг (Subject)</label>
-            <input id="eSubj" type="text" placeholder="Зөрчлийн мэдэгдэл"/>
-          </div>
-          <div class="fl" style="margin-bottom:20px">
-            <label>Агуулга</label>
-            <textarea id="eBody" placeholder="Имэйлийн агуулга…"></textarea>
-          </div>
-          <div style="display:flex;gap:9px">
-            <button class="btn b-cyan" onclick="sendEmail()">✈ Илгээх</button>
-            <button class="btn b-ghost" onclick="emailTemplate()">📄 Загвар</button>
+      <!-- ── EMAIL ── -->
+      <div class="sec" id="sec-email">
+        <div class="sec-crumb">Нүүр / <b>Имэйл илгээх</b></div>
+        <div class="email-wrap">
+          <div class="email-card">
+            <h2>✉️ Имэйл илгээх</h2>
+            <p>Хариуцагч болон удирдлагад мэдэгдэл илгээнэ үү</p>
+            <div class="fl" style="margin-bottom:13px">
+              <label>Хүлээн авагч (To)</label>
+              <input id="eTo" type="email" placeholder="example@company.mn" />
+            </div>
+            <div class="fl" style="margin-bottom:13px">
+              <label>Гарчиг (Subject)</label>
+              <input id="eSubj" type="text" placeholder="Зөрчлийн мэдэгдэл" />
+            </div>
+            <div class="fl" style="margin-bottom:20px">
+              <label>Агуулга</label>
+              <textarea id="eBody" placeholder="Имэйлийн агуулга…"></textarea>
+            </div>
+            <div style="display:flex;gap:9px">
+              <button class="btn b-cyan" onclick="sendEmail()">✈ Илгээх</button>
+              <button class="btn b-ghost" onclick="emailTemplate()">📄 Загвар</button>
+            </div>
           </div>
         </div>
       </div>
-    </div>
 
-  </div><!-- /content -->
-</div><!-- /main -->
+    </div><!-- /content -->
+  </div><!-- /main -->
 
-<!-- ══ MODAL ══ -->
-<div class="overlay" id="modal" onclick="if(event.target===this)closeModal()">
-  <div class="modal">
-    <div class="modal-title" id="modalTitle">Зөрчил нэмэх</div>
-    <div class="fg">
-      <div class="fl fg-full">
-        <label>Нэр / Хариуцагч</label>
-        <input id="mName" type="text" placeholder="Зөрчлийн нэр…"/>
+  <!-- ══ MODAL ══ -->
+  <div class="overlay" id="modal" onclick="if(event.target===this)closeModal()">
+    <div class="modal">
+      <div class="modal-title" id="modalTitle">Зөрчил нэмэх</div>
+      <div class="fg">
+        <div class="fl fg-full">
+          <label>Нэр / Хариуцагч</label>
+          <input id="mName" type="text" placeholder="Зөрчлийн нэр…" />
+        </div>
+        <div class="fl fg-full">
+          <label>Зөрчлийн төрөл</label>
+          <input id="mType" type="text" placeholder="Журам зөрчих, Хугацаа хэтрэх…" />
+        </div>
+        <div class="fl">
+          <label>Эрсдэлийн зэрэг</label>
+          <select id="mSev">
+            <option value="low">Бага</option>
+            <option value="mid">Дунд</option>
+            <option value="high">Өндөр</option>
+            <option value="critical">Маш өндөр</option>
+          </select>
+        </div>
+        <div class="fl">
+          <label>Огноо</label>
+          <input id="mDate" type="date" />
+        </div>
+        <div class="fl fg-full">
+          <label>Төлөв</label>
+          <select id="mStat">
+            <option value="new">Шинэ</option>
+            <option value="progress">Явцтай</option>
+            <option value="done">Дууссан</option>
+          </select>
+        </div>
       </div>
-      <div class="fl fg-full">
-        <label>Зөрчлийн төрөл</label>
-        <input id="mType" type="text" placeholder="Журам зөрчих, Хугацаа хэтрэх…"/>
+      <div class="m-footer">
+        <button class="btn b-ghost" onclick="closeModal()">Болих</button>
+        <button class="btn b-cyan" onclick="saveV()">Хадгалах</button>
       </div>
-      <div class="fl">
-        <label>Эрсдэлийн зэрэг</label>
-        <select id="mSev">
-          <option value="low">Бага</option>
-          <option value="mid">Дунд</option>
-          <option value="high">Өндөр</option>
-          <option value="critical">Маш өндөр</option>
-        </select>
-      </div>
-      <div class="fl">
-        <label>Огноо</label>
-        <input id="mDate" type="date"/>
-      </div>
-      <div class="fl fg-full">
-        <label>Төлөв</label>
-        <select id="mStat">
-          <option value="new">Шинэ</option>
-          <option value="progress">Явцтай</option>
-          <option value="done">Дууссан</option>
-        </select>
-      </div>
-    </div>
-    <div class="m-footer">
-      <button class="btn b-ghost" onclick="closeModal()">Болих</button>
-      <button class="btn b-cyan" onclick="saveV()">Хадгалах</button>
     </div>
   </div>
-</div>
 
-<!-- ══ TOAST ══ -->
-<div class="toast" id="toast"></div>
+  <!-- ══ TOAST ══ -->
+  <div class="toast" id="toast"></div>
 
-<script>
-// ════════════════════════════════════════
-//  STATE
-// ════════════════════════════════════════
-const API = '/api';
-let TOKEN = '', ROLE = '', UNAME = '';
-let data  = [];    // violations array
-let editId = null;
-let pg = 1;
-const PER = 12;
+  <script>
+    // ════════════════════════════════════════
+    //  STATE
+    // ════════════════════════════════════════
+    const API = '/api';
+    let TOKEN = '', ROLE = '', UNAME = '';
+    let data = [];    // violations array
+    let editId = null;
+    let pg = 1;
+    const PER = 12;
 
-// ── DEMO seed data ────────────────────────
-const SEED = [
-  {id:1,name:'Санхүүгийн тайлан хоцрогдол',type:'Хугацаа хэтрэх',severity:'high',date:'2025-01-10',status:'progress'},
-  {id:2,name:'ATM техник эвдрэл',type:'Тоног төхөөрөмж',severity:'critical',date:'2025-01-08',status:'new'},
-  {id:3,name:'HR бүртгэлийн алдаа',type:'Журам зөрчих',severity:'low',date:'2025-01-12',status:'done'},
-  {id:4,name:'Борлуулалтын тайлан дутуу',type:'Тайлагнал',severity:'mid',date:'2025-01-05',status:'progress'},
-  {id:5,name:'МТ сүлжээний тасалдал',type:'Технологи',severity:'high',date:'2025-01-09',status:'new'},
-  {id:6,name:'Маркетинг зардлын хэтрэлт',type:'Санхүү',severity:'mid',date:'2025-01-07',status:'done'},
-  {id:7,name:'Үйл ажиллагааны зөрчил',type:'Журам зөрчих',severity:'low',date:'2025-01-11',status:'new'},
-  {id:8,name:'Чанарын стандарт зөрчих',type:'Чанар',severity:'high',date:'2025-01-06',status:'progress'},
-  {id:9,name:'ХАБЭА сургалт хоцрогдол',type:'Аюулгүй байдал',severity:'mid',date:'2025-01-03',status:'done'},
-  {id:10,name:'Гэрээний нөхцөл зөрчил',type:'Хуулийн',severity:'critical',date:'2025-01-02',status:'new'},
-  {id:11,name:'Дотоод аудитын дутагдал',type:'Аудит',severity:'mid',date:'2025-01-13',status:'progress'},
-  {id:12,name:'Хэрэглэгчийн мэдээлэл алдагдал',type:'Мэдээлэл аюулгүй байдал',severity:'critical',date:'2024-12-28',status:'done'},
-  {id:13,name:'Борлуулалтын зорилт биелэгдсэнгүй',type:'Гүйцэтгэл',severity:'mid',date:'2024-12-20',status:'new'},
-  {id:14,name:'Ажилтны ёс зүйн зөрчил',type:'Журам зөрчих',severity:'high',date:'2024-12-15',status:'done'},
-];
+    // ── DEMO seed data ────────────────────────
+    const SEED = [
+      { id: 1, name: 'Санхүүгийн тайлан хоцрогдол', type: 'Хугацаа хэтрэх', severity: 'high', date: '2025-01-10', status: 'progress' },
+      { id: 2, name: 'ATM техник эвдрэл', type: 'Тоног төхөөрөмж', severity: 'critical', date: '2025-01-08', status: 'new' },
+      { id: 3, name: 'HR бүртгэлийн алдаа', type: 'Журам зөрчих', severity: 'low', date: '2025-01-12', status: 'done' },
+      { id: 4, name: 'Борлуулалтын тайлан дутуу', type: 'Тайлагнал', severity: 'mid', date: '2025-01-05', status: 'progress' },
+      { id: 5, name: 'МТ сүлжээний тасалдал', type: 'Технологи', severity: 'high', date: '2025-01-09', status: 'new' },
+      { id: 6, name: 'Маркетинг зардлын хэтрэлт', type: 'Санхүү', severity: 'mid', date: '2025-01-07', status: 'done' },
+      { id: 7, name: 'Үйл ажиллагааны зөрчил', type: 'Журам зөрчих', severity: 'low', date: '2025-01-11', status: 'new' },
+      { id: 8, name: 'Чанарын стандарт зөрчих', type: 'Чанар', severity: 'high', date: '2025-01-06', status: 'progress' },
+      { id: 9, name: 'ХАБЭА сургалт хоцрогдол', type: 'Аюулгүй байдал', severity: 'mid', date: '2025-01-03', status: 'done' },
+      { id: 10, name: 'Гэрээний нөхцөл зөрчил', type: 'Хуулийн', severity: 'critical', date: '2025-01-02', status: 'new' },
+      { id: 11, name: 'Дотоод аудитын дутагдал', type: 'Аудит', severity: 'mid', date: '2025-01-13', status: 'progress' },
+      { id: 12, name: 'Хэрэглэгчийн мэдээлэл алдагдал', type: 'Мэдээлэл аюулгүй байдал', severity: 'critical', date: '2024-12-28', status: 'done' },
+      { id: 13, name: 'Борлуулалтын зорилт биелэгдсэнгүй', type: 'Гүйцэтгэл', severity: 'mid', date: '2024-12-20', status: 'new' },
+      { id: 14, name: 'Ажилтны ёс зүйн зөрчил', type: 'Журам зөрчих', severity: 'high', date: '2024-12-15', status: 'done' },
+    ];
 
-// ════════════════════════════════════════
-//  LOGIN / LOGOUT
-// ════════════════════════════════════════
-document.getElementById('lPass').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin()});
+    // ════════════════════════════════════════
+    //  LOGIN / LOGOUT
+    // ════════════════════════════════════════
+    document.getElementById('lPass').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin() });
 
-async function doLogin(){
-  const u=v('lUser'), p=v('lPass');
-  document.getElementById('lErr').textContent='';
-  try{
-    const r=await fetch(`${API}/auth/login`,{method:'POST',headers:H(),body:JSON.stringify({username:u,password:p})});
-    const d=await r.json();
-    if(!r.ok){document.getElementById('lErr').textContent=d.message;return;}
-    TOKEN=d.token; ROLE=d.role; UNAME=d.username;
-    boot();
-  }catch{
-    // demo fallback
-    if((u==='admin'&&p==='password')||(u==='user'&&p==='password')){
-      TOKEN='demo'; ROLE=u==='admin'?'Admin':'User'; UNAME=u; boot();
-    } else {
-      document.getElementById('lErr').textContent='Хэрэглэгч эсвэл нууц үг буруу';
+    async function doLogin() {
+      const u = v('lUser'), p = v('lPass');
+      document.getElementById('lErr').textContent = '';
+      try {
+        const r = await fetch(`${API}/auth/login`, { method: 'POST', headers: H(), body: JSON.stringify({ username: u, password: p }) });
+        const d = await r.json();
+        if (!r.ok) { document.getElementById('lErr').textContent = d.message; return; }
+        TOKEN = d.token; ROLE = d.role; UNAME = d.username;
+        boot();
+      } catch {
+        // demo fallback
+        if ((u === 'admin' && p === 'password') || (u === 'user' && p === 'password')) {
+          TOKEN = 'demo'; ROLE = u === 'admin' ? 'Admin' : 'User'; UNAME = u; boot();
+        } else {
+          document.getElementById('lErr').textContent = 'Хэрэглэгч эсвэл нууц үг буруу';
+        }
+      }
     }
-  }
-}
 
-function boot(){
-  document.getElementById('loginPage').style.display='none';
-  document.getElementById('sidebar').style.display='flex';
-  document.getElementById('mainArea').style.display='flex';
-  document.getElementById('tUser').textContent=UNAME;
-  document.getElementById('tRole').textContent=ROLE;
-  loadData();
-}
+    function boot() {
+      document.getElementById('loginPage').style.display = 'none';
+      document.getElementById('sidebar').style.display = 'flex';
+      document.getElementById('mainArea').style.display = 'flex';
+      document.getElementById('tUser').textContent = UNAME;
+      document.getElementById('tRole').textContent = ROLE;
+      loadData();
+    }
 
-function doLogout(){
-  TOKEN=''; ROLE=''; UNAME=''; data=[];
-  document.getElementById('loginPage').style.display='flex';
-  document.getElementById('sidebar').style.display='none';
-  document.getElementById('mainArea').style.display='none';
-  document.getElementById('lErr').textContent='';
-}
+    function doLogout() {
+      TOKEN = ''; ROLE = ''; UNAME = ''; data = [];
+      document.getElementById('loginPage').style.display = 'flex';
+      document.getElementById('sidebar').style.display = 'none';
+      document.getElementById('mainArea').style.display = 'none';
+      document.getElementById('lErr').textContent = '';
+    }
 
-// ════════════════════════════════════════
-//  DATA
-// ════════════════════════════════════════
-async function loadData(){
-  try{
-    const r=await fetch(`${API}/violations`,{headers:authH()});
-    if(r.ok) data=await r.json();
-    else throw 0;
-  }catch{ data=SEED.map(x=>({...x})); }
-  document.getElementById('navBadge').textContent=data.length;
-  renderDashboard();
-  renderTbl();
-}
+    // ════════════════════════════════════════
+    //  DATA
+    // ════════════════════════════════════════
+    async function loadData() {
+      try {
+        const r = await fetch(`${API}/violations`, { headers: authH() });
+        if (r.ok) data = await r.json();
+        else throw 0;
+      } catch { data = SEED.map(x => ({ ...x })); }
+      document.getElementById('navBadge').textContent = data.length;
+      renderDashboard();
+      renderTbl();
+    }
 
-// ════════════════════════════════════════
-//  NAV
-// ════════════════════════════════════════
-const TITLES={dashboard:'Ерөнхий тойм',violations:'Бүх зөрчил',email:'Имэйл илгээх'};
-function nav(sec,el){
-  document.querySelectorAll('.sec').forEach(s=>s.classList.remove('on'));
-  document.querySelectorAll('.sb-item').forEach(s=>s.classList.remove('on'));
-  document.getElementById('sec-'+sec).classList.add('on');
-  el.classList.add('on');
-  document.getElementById('pageTitle').textContent=TITLES[sec]||sec;
-  if(sec==='dashboard') renderDashboard();
-}
+    // ════════════════════════════════════════
+    //  NAV
+    // ════════════════════════════════════════
+    const TITLES = { dashboard: 'Ерөнхий тойм', violations: 'Бүх зөрчил', email: 'Имэйл илгээх' };
+    function nav(sec, el) {
+      document.querySelectorAll('.sec').forEach(s => s.classList.remove('on'));
+      document.querySelectorAll('.sb-item').forEach(s => s.classList.remove('on'));
+      document.getElementById('sec-' + sec).classList.add('on');
+      el.classList.add('on');
+      document.getElementById('pageTitle').textContent = TITLES[sec] || sec;
+      if (sec === 'dashboard') renderDashboard();
+    }
 
-// ════════════════════════════════════════
-//  DASHBOARD
-// ════════════════════════════════════════
-function renderDashboard(){
-  const total=data.length;
-  const crit=cnt('severity','critical');
-  const high=cnt('severity','high');
-  const mid=cnt('severity','mid');
-  const low=cnt('severity','low');
+    // ════════════════════════════════════════
+    //  DASHBOARD
+    // ════════════════════════════════════════
+    function renderDashboard() {
+      const total = data.length;
+      const crit = cnt('severity', 'critical');
+      const high = cnt('severity', 'high');
+      const mid = cnt('severity', 'mid');
+      const low = cnt('severity', 'low');
 
-  document.getElementById('statCards').innerHTML=`
+      document.getElementById('statCards').innerHTML = `
     <div class="stat s-cyan"><div class="stat-n">${total}</div><div class="stat-l">Нийт зөрчил</div></div>
      `;
 
-  // stacked bar: top types
-  const types=[...new Set(data.map(x=>x.type))].slice(0,7);
-  killChart('cBar');
-  new Chart(g('cBar'),{type:'bar',data:{
-    labels:types.map(t=>t.length>10?t.slice(0,10)+'…':t),
-    datasets:[
-      {label:'Маш өндөр',data:types.map(t=>data.filter(x=>x.type===t&&x.severity==='critical').length),backgroundColor:'#ef5350',borderRadius:3},
-      {label:'Өндөр',data:types.map(t=>data.filter(x=>x.type===t&&x.severity==='high').length),backgroundColor:'#ff7043',borderRadius:3},
-      {label:'Дунд',data:types.map(t=>data.filter(x=>x.type===t&&x.severity==='mid').length),backgroundColor:'#ffa000',borderRadius:3},
-      {label:'Бага',data:types.map(t=>data.filter(x=>x.type===t&&x.severity==='low').length),backgroundColor:'#43a047',borderRadius:3},
-    ]
-  },options:{plugins:{legend:{labels:{font:{size:11}}}},scales:{x:{stacked:true,ticks:{font:{size:10}}},y:{stacked:true,beginAtZero:true}},responsive:true,maintainAspectRatio:false}});
+      // stacked bar: top types
+      const types = [...new Set(data.map(x => x.type))].slice(0, 7);
+      killChart('cBar');
+      new Chart(g('cBar'), {
+        type: 'bar', data: {
+          labels: types.map(t => t.length > 10 ? t.slice(0, 10) + '…' : t),
+          datasets: [
+            { label: 'Маш өндөр', data: types.map(t => data.filter(x => x.type === t && x.severity === 'critical').length), backgroundColor: '#ef5350', borderRadius: 3 },
+            { label: 'Өндөр', data: types.map(t => data.filter(x => x.type === t && x.severity === 'high').length), backgroundColor: '#ff7043', borderRadius: 3 },
+            { label: 'Дунд', data: types.map(t => data.filter(x => x.type === t && x.severity === 'mid').length), backgroundColor: '#ffa000', borderRadius: 3 },
+            { label: 'Бага', data: types.map(t => data.filter(x => x.type === t && x.severity === 'low').length), backgroundColor: '#43a047', borderRadius: 3 },
+          ]
+        }, options: { plugins: { legend: { labels: { font: { size: 11 } } } }, scales: { x: { stacked: true, ticks: { font: { size: 10 } } }, y: { stacked: true, beginAtZero: true } }, responsive: true, maintainAspectRatio: false }
+      });
 
-  // doughnut status
-  const nw=cnt('status','new'), pr=cnt('status','progress'), dn=cnt('status','done');
-  killChart('cDoughnut');
-  new Chart(g('cDoughnut'),{type:'doughnut',data:{
-    labels:['Шинэ','Явцтай','Дууссан'],
-    datasets:[{data:[nw,pr,dn],backgroundColor:['#1e88e5','#ffa000','#43a047'],borderWidth:0}]
-  },options:{plugins:{legend:{position:'bottom',labels:{font:{size:11}}}},cutout:'55%',responsive:true,maintainAspectRatio:false}});
+      // doughnut status
+      const nw = cnt('status', 'new'), pr = cnt('status', 'progress'), dn = cnt('status', 'done');
+      killChart('cDoughnut');
+      new Chart(g('cDoughnut'), {
+        type: 'doughnut', data: {
+          labels: ['Шинэ', 'Явцтай', 'Дууссан'],
+          datasets: [{ data: [nw, pr, dn], backgroundColor: ['#1e88e5', '#ffa000', '#43a047'], borderWidth: 0 }]
+        }, options: { plugins: { legend: { position: 'bottom', labels: { font: { size: 11 } } } }, cutout: '55%', responsive: true, maintainAspectRatio: false }
+      });
 
-  // freq bar
-  killChart('cFreq');
-  new Chart(g('cFreq'),{type:'bar',data:{
-    labels:types.slice(0,6).map(t=>t.length>9?t.slice(0,9)+'…':t),
-    datasets:[{label:'Тоо',data:types.slice(0,6).map(t=>data.filter(x=>x.type===t).length),backgroundColor:'#00bcd4',borderRadius:4}]
-  },options:{plugins:{legend:{display:false}},scales:{x:{ticks:{font:{size:10}}},y:{beginAtZero:true}},responsive:true,maintainAspectRatio:false}});
+      // freq bar
+      killChart('cFreq');
+      new Chart(g('cFreq'), {
+        type: 'bar', data: {
+          labels: types.slice(0, 6).map(t => t.length > 9 ? t.slice(0, 9) + '…' : t),
+          datasets: [{ label: 'Тоо', data: types.slice(0, 6).map(t => data.filter(x => x.type === t).length), backgroundColor: '#00bcd4', borderRadius: 4 }]
+        }, options: { plugins: { legend: { display: false } }, scales: { x: { ticks: { font: { size: 10 } } }, y: { beginAtZero: true } }, responsive: true, maintainAspectRatio: false }
+      });
 
-  // trend line
-  const months=['1-р','2-р','3-р','4-р','5-р','6-р'];
-  killChart('cTrend');
-  new Chart(g('cTrend'),{type:'line',data:{
-    labels:months.map(m=>m+' сар'),
-    datasets:[
-      {label:'Нийт',data:[8,12,7,15,10,total],borderColor:'#1e88e5',backgroundColor:'rgba(30,136,229,.1)',fill:true,tension:.4},
-      {label:'Шийдсэн',data:[3,7,4,9,6,dn],borderColor:'#43a047',backgroundColor:'rgba(67,160,71,.08)',fill:true,tension:.4},
-    ]
-  },options:{plugins:{legend:{labels:{font:{size:11}}}},scales:{y:{beginAtZero:true}},responsive:true,maintainAspectRatio:false}});
+      // trend line
+      const months = ['1-р', '2-р', '3-р', '4-р', '5-р', '6-р'];
+      killChart('cTrend');
+      new Chart(g('cTrend'), {
+        type: 'line', data: {
+          labels: months.map(m => m + ' сар'),
+          datasets: [
+            { label: 'Нийт', data: [8, 12, 7, 15, 10, total], borderColor: '#1e88e5', backgroundColor: 'rgba(30,136,229,.1)', fill: true, tension: .4 },
+            { label: 'Шийдсэн', data: [3, 7, 4, 9, 6, dn], borderColor: '#43a047', backgroundColor: 'rgba(67,160,71,.08)', fill: true, tension: .4 },
+          ]
+        }, options: { plugins: { legend: { labels: { font: { size: 11 } } } }, scales: { y: { beginAtZero: true } }, responsive: true, maintainAspectRatio: false }
+      });
 
-  // perf line
-  killChart('cPerf');
-  new Chart(g('cPerf'),{type:'line',data:{
-    labels:months.map(m=>m+' сар'),
-    datasets:[{label:'Гүйцэтгэл %',data:[65,70,68,78,74,Math.round(dn/Math.max(total,1)*100)],borderColor:'#00bcd4',backgroundColor:'rgba(0,188,212,.1)',fill:true,tension:.4,pointBackgroundColor:'#00bcd4'}]
-  },options:{plugins:{legend:{display:false}},scales:{y:{beginAtZero:false,min:0,max:100}},responsive:true,maintainAspectRatio:false}});
-}
+      // perf line
+      killChart('cPerf');
+      new Chart(g('cPerf'), {
+        type: 'line', data: {
+          labels: months.map(m => m + ' сар'),
+          datasets: [{ label: 'Гүйцэтгэл %', data: [65, 70, 68, 78, 74, Math.round(dn / Math.max(total, 1) * 100)], borderColor: '#00bcd4', backgroundColor: 'rgba(0,188,212,.1)', fill: true, tension: .4, pointBackgroundColor: '#00bcd4' }]
+        }, options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: false, min: 0, max: 100 } }, responsive: true, maintainAspectRatio: false }
+      });
+    }
 
-function cnt(k,v){return data.filter(x=>x[k]===v).length}
-function killChart(id){const c=Chart.getChart(id);if(c)c.destroy()}
-function g(id){return document.getElementById(id)}
+    function cnt(k, v) { return data.filter(x => x[k] === v).length }
+    function killChart(id) { const c = Chart.getChart(id); if (c) c.destroy() }
+    function g(id) { return document.getElementById(id) }
 
-// ════════════════════════════════════════
-//  VIOLATIONS TABLE
-// ════════════════════════════════════════
-function renderTbl(){
-  const q=(v('srch')||'').toLowerCase();
-  const sv=v('fSev'), st=v('fStat');
-  const filtered=data.filter(x=>
-    (!q||x.name.toLowerCase().includes(q)||x.type.toLowerCase().includes(q))&&
-    (!sv||x.severity===sv)&&
-    (!st||x.status===st)
-  );
-  const total=filtered.length;
-  const pages=Math.ceil(total/PER)||1;
-  if(pg>pages)pg=1;
-  const slice=filtered.slice((pg-1)*PER,pg*PER);
-  const tb=g('tBody');
+    // ════════════════════════════════════════
+    //  VIOLATIONS TABLE
+    // ════════════════════════════════════════
+    function renderTbl() {
+      const q = (v('srch') || '').toLowerCase();
+      const sv = v('fSev'), st = v('fStat');
+      const filtered = data.filter(x =>
+        (!q || x.name.toLowerCase().includes(q) || x.type.toLowerCase().includes(q)) &&
+        (!sv || x.severity === sv) &&
+        (!st || x.status === st)
+      );
+      const total = filtered.length;
+      const pages = Math.ceil(total / PER) || 1;
+      if (pg > pages) pg = 1;
+      const slice = filtered.slice((pg - 1) * PER, pg * PER);
+      const tb = g('tBody');
 
-  if(!slice.length){
-    tb.innerHTML=`<tr class="empty-row"><td colspan="7">📭 Мэдээлэл олдсонгүй</td></tr>`;
-  } else {
-    tb.innerHTML=slice.map((row,i)=>`
+      if (!slice.length) {
+        tb.innerHTML = `<tr class="empty-row"><td colspan="7">📭 Мэдээлэл олдсонгүй</td></tr>`;
+      } else {
+        tb.innerHTML = slice.map((row, i) => `
       <tr>
-        <td style="color:#bbb;font-size:12px">${(pg-1)*PER+i+1}</td>
+        <td style="color:#bbb;font-size:12px">${(pg - 1) * PER + i + 1}</td>
         <td><strong>${esc(row.name)}</strong></td>
         <td style="color:#666;font-size:12.5px">${esc(row.type)}</td>
         <td>${sevChip(row.severity)}</td>
@@ -552,164 +419,165 @@ function renderTbl(){
         <td>
           <div class="row-acts">
             <button class="btn b-amber btn-sm" onclick="openEdit(${row.id})"> Засах</button>
-            ${ROLE==='Admin'?`<button class="btn b-red btn-sm" onclick="delV(${row.id})">🗑</button>`:''}
+            ${ROLE === 'Admin' ? `<button class="btn b-red btn-sm" onclick="delV(${row.id})">🗑</button>` : ''}
           </div>
         </td>
       </tr>
     `).join('');
-  }
+      }
 
-  // pagination
-  let pgHtml=`<span class="pg-info">Нийт ${total} зөрчил</span>`;
-  for(let i=1;i<=pages;i++) pgHtml+=`<button class="pg-btn${i===pg?' on':''}" onclick="goPage(${i})">${i}</button>`;
-  g('pgBar').innerHTML=pgHtml;
-}
-
-function goPage(n){pg=n;renderTbl()}
-
-function sevChip(s){
-  const m={low:['c-low','Бага'],mid:['c-mid','Дунд'],high:['c-high','Өндөр'],critical:['c-critical','Маш өндөр']};
-  const[cls,lbl]=m[s]||m.low;
-  return`<span class="chip ${cls}">${lbl}</span>`;
-}
-function statChip(s){
-  const m={new:['c-new','Шинэ'],progress:['c-progress','Явцтай'],done:['c-done','Дууссан']};
-  const[cls,lbl]=m[s]||m.new;
-  return`<span class="chip ${cls}">${lbl}</span>`;
-}
-
-// ════════════════════════════════════════
-//  CRUD MODAL
-// ════════════════════════════════════════
-function openAdd(){
-  editId=null;
-  g('modalTitle').textContent='Зөрчил нэмэх';
-  g('mName').value=''; g('mType').value='';
-  g('mSev').value='low'; g('mStat').value='new';
-  g('mDate').value=today();
-  g('modal').classList.add('open');
-  g('mName').focus();
-}
-function openEdit(id){
-  editId=id;
-  const row=data.find(x=>x.id===id);
-  g('modalTitle').textContent='Зөрчил засварлах';
-  g('mName').value=row.name; g('mType').value=row.type;
-  g('mSev').value=row.severity; g('mStat').value=row.status;
-  g('mDate').value=row.date;
-  g('modal').classList.add('open');
-}
-function closeModal(){ g('modal').classList.remove('open') }
-
-async function saveV(){
-  const body={name:v('mName').trim(),type:v('mType').trim(),severity:v('mSev'),date:v('mDate'),status:v('mStat')};
-  if(!body.name||!body.type||!body.date){toast('Бүх талбарыг бөглөнө үү','err');return}
-  try{
-    if(editId){
-      await fetch(`${API}/violations/${editId}`,{method:'PUT',headers:{...authH(),...{'Content-Type':'application/json'}},body:JSON.stringify(body)});
-    } else {
-      await fetch(`${API}/violations`,{method:'POST',headers:{...authH(),...{'Content-Type':'application/json'}},body:JSON.stringify(body)});
+      // pagination
+      let pgHtml = `<span class="pg-info">Нийт ${total} зөрчил</span>`;
+      for (let i = 1; i <= pages; i++) pgHtml += `<button class="pg-btn${i === pg ? ' on' : ''}" onclick="goPage(${i})">${i}</button>`;
+      g('pgBar').innerHTML = pgHtml;
     }
-    await loadData();
-  }catch{
-    // demo
-    if(editId){ const i=data.findIndex(x=>x.id===editId); data[i]={...data[i],...body}; }
-    else { data.push({id:Date.now(),...body}); }
-    g('navBadge').textContent=data.length;
-    renderDashboard(); renderTbl();
-  }
-  closeModal();
-  toast(editId?'Амжилттай засварлагдлаа ✅':'Амжилттай нэмэгдлээ ✅','ok');
-}
 
-async function delV(id){
-  if(!confirm('Устгахдаа итгэлтэй байна уу?')) return;
-  try{
-    await fetch(`${API}/violations/${id}`,{method:'DELETE',headers:authH()});
-    await loadData();
-  }catch{
-    data=data.filter(x=>x.id!==id);
-    g('navBadge').textContent=data.length;
-    renderDashboard(); renderTbl();
-  }
-  toast('Амжилттай устгагдлаа 🗑','ok');
-}
+    function goPage(n) { pg = n; renderTbl() }
 
-// ════════════════════════════════════════
-//  EXPORT  (Dashboard + Violations)
-// ════════════════════════════════════════
-function exportCSV(){
-  const header=['#','Нэр','Төрөл','Эрсдэл','Огноо','Төлөв'];
-  const rows=data.map((r,i)=>[i+1,r.name,r.type,r.severity,r.date,r.status]);
-  const csv=[header,...rows].map(r=>r.map(c=>`"${c}"`).join(',')).join('\n');
-  dl('violations.csv','text/csv;charset=utf-8;',csv);
-  toast('CSV амжилттай татагдлаа ✅','ok');
-}
-function exportXLS(){
-  const rows=data.map((r,i)=>({'#':i+1,'Нэр':r.name,'Төрөл':r.type,'Эрсдэл':r.severity,'Огноо':r.date,'Төлөв':r.status}));
-  const ws=XLSX.utils.json_to_sheet(rows);
-  const wb=XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb,ws,'Зөрчил');
-  XLSX.writeFile(wb,'violations.xlsx');
-  toast('Excel амжилттай татагдлаа ✅','ok');
-}
-function dl(name,type,content){
-  const a=document.createElement('a');
-  a.href=URL.createObjectURL(new Blob(['\ufeff'+content],{type}));
-  a.download=name; document.body.appendChild(a); a.click(); a.remove();
-}
+    function sevChip(s) {
+      const m = { low: ['c-low', 'Бага'], mid: ['c-mid', 'Дунд'], high: ['c-high', 'Өндөр'], critical: ['c-critical', 'Маш өндөр'] };
+      const [cls, lbl] = m[s] || m.low;
+      return `<span class="chip ${cls}">${lbl}</span>`;
+    }
+    function statChip(s) {
+      const m = { new: ['c-new', 'Шинэ'], progress: ['c-progress', 'Явцтай'], done: ['c-done', 'Дууссан'] };
+      const [cls, lbl] = m[s] || m.new;
+      return `<span class="chip ${cls}">${lbl}</span>`;
+    }
 
-// ════════════════════════════════════════
-//  EMAIL
-// ════════════════════════════════════════
-function emailTemplate(){
-  const done=cnt('status','done');
-  g('eSubj').value='Зөрчлийн мэдэгдэл — Хяналтын Систем';
-  g('eBody').value=
-`Хүндэт хариуцагч,
+    // ════════════════════════════════════════
+    //  CRUD MODAL
+    // ════════════════════════════════════════
+    function openAdd() {
+      editId = null;
+      g('modalTitle').textContent = 'Зөрчил нэмэх';
+      g('mName').value = ''; g('mType').value = '';
+      g('mSev').value = 'low'; g('mStat').value = 'new';
+      g('mDate').value = today();
+      g('modal').classList.add('open');
+      g('mName').focus();
+    }
+    function openEdit(id) {
+      editId = id;
+      const row = data.find(x => x.id === id);
+      g('modalTitle').textContent = 'Зөрчил засварлах';
+      g('mName').value = row.name; g('mType').value = row.type;
+      g('mSev').value = row.severity; g('mStat').value = row.status;
+      g('mDate').value = row.date;
+      g('modal').classList.add('open');
+    }
+    function closeModal() { g('modal').classList.remove('open') }
+
+    async function saveV() {
+      const body = { name: v('mName').trim(), type: v('mType').trim(), severity: v('mSev'), date: v('mDate'), status: v('mStat') };
+      if (!body.name || !body.type || !body.date) { toast('Бүх талбарыг бөглөнө үү', 'err'); return }
+      try {
+        if (editId) {
+          await fetch(`${API}/violations/${editId}`, { method: 'PUT', headers: { ...authH(), ...{ 'Content-Type': 'application/json' } }, body: JSON.stringify(body) });
+        } else {
+          await fetch(`${API}/violations`, { method: 'POST', headers: { ...authH(), ...{ 'Content-Type': 'application/json' } }, body: JSON.stringify(body) });
+        }
+        await loadData();
+      } catch {
+        // demo
+        if (editId) { const i = data.findIndex(x => x.id === editId); data[i] = { ...data[i], ...body }; }
+        else { data.push({ id: Date.now(), ...body }); }
+        g('navBadge').textContent = data.length;
+        renderDashboard(); renderTbl();
+      }
+      closeModal();
+      toast(editId ? 'Амжилттай засварлагдлаа ✅' : 'Амжилттай нэмэгдлээ ✅', 'ok');
+    }
+
+    async function delV(id) {
+      if (!confirm('Устгахдаа итгэлтэй байна уу?')) return;
+      try {
+        await fetch(`${API}/violations/${id}`, { method: 'DELETE', headers: authH() });
+        await loadData();
+      } catch {
+        data = data.filter(x => x.id !== id);
+        g('navBadge').textContent = data.length;
+        renderDashboard(); renderTbl();
+      }
+      toast('Амжилттай устгагдлаа 🗑', 'ok');
+    }
+
+    // ════════════════════════════════════════
+    //  EXPORT  (Dashboard + Violations)
+    // ════════════════════════════════════════
+    function exportCSV() {
+      const header = ['#', 'Нэр', 'Төрөл', 'Эрсдэл', 'Огноо', 'Төлөв'];
+      const rows = data.map((r, i) => [i + 1, r.name, r.type, r.severity, r.date, r.status]);
+      const csv = [header, ...rows].map(r => r.map(c => `"${c}"`).join(',')).join('\n');
+      dl('violations.csv', 'text/csv;charset=utf-8;', csv);
+      toast('CSV амжилттай татагдлаа ✅', 'ok');
+    }
+    function exportXLS() {
+      const rows = data.map((r, i) => ({ '#': i + 1, 'Нэр': r.name, 'Төрөл': r.type, 'Эрсдэл': r.severity, 'Огноо': r.date, 'Төлөв': r.status }));
+      const ws = XLSX.utils.json_to_sheet(rows);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Зөрчил');
+      XLSX.writeFile(wb, 'violations.xlsx');
+      toast('Excel амжилттай татагдлаа ✅', 'ok');
+    }
+    function dl(name, type, content) {
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(new Blob(['\ufeff' + content], { type }));
+      a.download = name; document.body.appendChild(a); a.click(); a.remove();
+    }
+
+    // ════════════════════════════════════════
+    //  EMAIL
+    // ════════════════════════════════════════
+    function emailTemplate() {
+      const done = cnt('status', 'done');
+      g('eSubj').value = 'Зөрчлийн мэдэгдэл — Хяналтын Систем';
+      g('eBody').value =
+        `Хүндэт хариуцагч,
 
 Тайлант хугацааны зөрчлийн мэдэгдлийг хүргэж байна.
 
 Нийт зөрчил     : ${data.length}
-Шийдвэрлэгдэж буй: ${cnt('status','progress')}
+Шийдвэрлэгдэж буй: ${cnt('status', 'progress')}
 Дууссан          : ${done}
-Шинэ             : ${cnt('status','new')}
+Шинэ             : ${cnt('status', 'new')}
 
 Дэлгэрэнгүйг системд нэвтэрч харна уу.
 
 Хүндэтгэлтэй,
 Хяналтын Систем`;
-}
+    }
 
-async function sendEmail(){
-  const to=v('eTo').trim(), subj=v('eSubj').trim(), body=v('eBody').trim();
-  if(!to||!subj||!body){toast('Бүх талбарыг бөглөнө үү','err');return}
-  try{
-    const r=await fetch(`${API}/email/send`,{method:'POST',headers:{...authH(),...{'Content-Type':'application/json'}},body:JSON.stringify({to,subject:subj,body})});
-    const d=await r.json();
-    if(!r.ok) throw d.message;
-    toast('Имэйл амжилттай илгээгдлээ ✉️','ok');
-  }catch(e){
-    toast(typeof e==='string'?e:'Имэйл илгээгдлээ (демо горим) ✉️','ok');
-  }
-}
+    async function sendEmail() {
+      const to = v('eTo').trim(), subj = v('eSubj').trim(), body = v('eBody').trim();
+      if (!to || !subj || !body) { toast('Бүх талбарыг бөглөнө үү', 'err'); return }
+      try {
+        const r = await fetch(`${API}/email/send`, { method: 'POST', headers: { ...authH(), ...{ 'Content-Type': 'application/json' } }, body: JSON.stringify({ to, subject: subj, body }) });
+        const d = await r.json();
+        if (!r.ok) throw d.message;
+        toast('Имэйл амжилттай илгээгдлээ ✉️', 'ok');
+      } catch (e) {
+        toast(typeof e === 'string' ? e : 'Имэйл илгээгдлээ (демо горим) ✉️', 'ok');
+      }
+    }
 
-// ════════════════════════════════════════
-//  UTILS
-// ════════════════════════════════════════
-function v(id){return(document.getElementById(id)||{}).value||''}
-function esc(s){return String(s).replace(/</g,'&lt;').replace(/>/g,'&gt;')}
-function today(){return new Date().toISOString().split('T')[0]}
-function H(){return{'Content-Type':'application/json'}}
-function authH(){return TOKEN&&TOKEN!=='demo'?{'Authorization':`Bearer ${TOKEN}`,'Content-Type':'application/json'}:{'Content-Type':'application/json'}}
+    // ════════════════════════════════════════
+    //  UTILS
+    // ════════════════════════════════════════
+    function v(id) { return (document.getElementById(id) || {}).value || '' }
+    function esc(s) { return String(s).replace(/</g, '&lt;').replace(/>/g, '&gt;') }
+    function today() { return new Date().toISOString().split('T')[0] }
+    function H() { return { 'Content-Type': 'application/json' } }
+    function authH() { return TOKEN && TOKEN !== 'demo' ? { 'Authorization': `Bearer ${TOKEN}`, 'Content-Type': 'application/json' } : { 'Content-Type': 'application/json' } }
 
-let _toastTimer;
-function toast(msg,type='ok'){
-  const t=g('toast');
-  t.textContent=msg; t.className=`toast show t-${type}`;
-  clearTimeout(_toastTimer);
-  _toastTimer=setTimeout(()=>t.className='toast',3000);
-}
-</script>
+    let _toastTimer;
+    function toast(msg, type = 'ok') {
+      const t = g('toast');
+      t.textContent = msg; t.className = `toast show t-${type}`;
+      clearTimeout(_toastTimer);
+      _toastTimer = setTimeout(() => t.className = 'toast', 3000);
+    }
+  </script>
 </body>
+
 </html>
