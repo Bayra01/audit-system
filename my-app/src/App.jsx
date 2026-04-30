@@ -1,88 +1,86 @@
-import { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
-import './App.css'; 
-import './style.css'; 
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+// 1. ToastContainer болон CSS-ийг заавал импортлох
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css'; 
 
+import { AuthProvider, useAuth } from "./context/AuthContext";
 import LoginPage from "./pages/LoginPage";
+import Dashboard from "./pages/Dashboard";
 import RegisterPage from "./pages/RegisterPage";
-import Dashboard from './pages/Dashboard';
 
-function AppContent() {
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true); // Ачаалж буй төлөв нэмэв
-  const navigate = useNavigate();
+function AppRoutes() {
+  const { user, loading } = useAuth();
 
-  // Хуудас анх ачаалахад localStorage шалгах
-  useEffect(() => {
-    const savedUser = localStorage.getItem("username");
-    const savedRole = localStorage.getItem("role");
-    
-    if (savedUser) {
-      setUser({ username: savedUser, role: savedRole });
-    }
-    setLoading(false); // Шалгаж дууссаны дараа loading-ийг зогсооно
-  }, []);
-
-  const handleAuthSuccess = (userData) => {
-    if (userData && userData.username) {
-      localStorage.setItem("username", userData.username);
-      localStorage.setItem("role", userData.role || "User");
-      
-      setUser({ 
-        username: userData.username, 
-        role: userData.role || "User" 
-      });
-
-      // Navigate-ийг setTimeout-гүйгээр шууд хийж болно
-      navigate("/dashboard");
-    }
-  };
-
-  const handleLogout = () => {
-    localStorage.removeItem("username");
-    localStorage.removeItem("role");
-    localStorage.removeItem("accessToken");
-    setUser(null);
-    navigate("/login");
-  };
-
-  // Хэрэв localStorage-оос мэдээлэл уншиж дуусаагүй бол юу ч харуулахгүй (эсвэл spinner)
+  // Систем хэрэглэгчийн мэдээллийг шалгаж байх үед харуулах
   if (loading) {
-    return <div className="loading-screen">Ачаалж байна...</div>;
+    return (
+      <div style={{ 
+        display: 'flex', 
+        justifyContent: 'center', 
+        alignItems: 'center', 
+        height: '100vh',
+        fontSize: '18px'
+      }}>
+        Уншиж байна...
+      </div>
+    );
   }
 
   return (
     <Routes>
-      {/* Root path */}
-      <Route path="/" element={user ? <Navigate to="/dashboard" /> : <Navigate to="/login" />} />
-
+      {/* Нэвтрэх хуудас: Хэрэв нэвтэрсэн бол шууд Dashboard руу */}
       <Route 
         path="/login" 
-        element={user ? <Navigate to="/dashboard" /> : <LoginPage onLogin={handleAuthSuccess} onNavigate={() => navigate("/register")} />} 
+        element={!user ? <LoginPage /> : <Navigate to="/dashboard" replace />} 
       />
 
+      {/* Бүртгүүлэх хуудас */}
       <Route 
         path="/register" 
-        element={<RegisterPage onRegister={() => navigate("/login")} onNavigate={() => navigate("/login")} />} 
+        element={!user ? <RegisterPage /> : <Navigate to="/dashboard" replace />} 
       />
 
+      {/* Хяналтын самбар: Хамгаалалттай зам[cite: 1] */}
       <Route 
         path="/dashboard" 
-        element={user ? <Dashboard user={user} onLogout={handleLogout} /> : <Navigate to="/login" />} 
+        element={
+          user ? (
+            <Dashboard />
+          ) : (
+            // Нэвтрээгүй бол 'state' дамжуулан Login руу шилжүүлнэ[cite: 1]
+            <Navigate to="/login" state={{ fromDashboard: true }} replace />
+          )
+        } 
       />
-      
-      {/* 404 handling */}
-      <Route path="*" element={<Navigate to="/login" />} />
+
+      {/* Бусад бүх буруу хаяг дээр ажиллах logic[cite: 1] */}
+      <Route path="*" element={<Navigate to={user ? "/dashboard" : "/login"} replace />} />
     </Routes>
   );
 }
 
-function App() {
+export default function App() {
   return (
-    <Router>
-      <AppContent />
-    </Router>
+    <AuthProvider>
+      <BrowserRouter>
+        {/* Үндсэн маршрутууд[cite: 1] */}
+        <AppRoutes />
+        
+        {/* Мэдэгдэл харуулах контейнер - Зөвхөн нэг л байх ёстой[cite: 1] */}
+        <ToastContainer 
+          position="top-right"
+          autoClose={3000}
+          hideProgressBar={false}
+          newestOnTop={true} // Шинэ мэдэгдэл дээрээ харагдана
+          closeOnClick
+          rtl={false}
+          pauseOnFocusLoss
+          draggable
+          pauseOnHover
+          theme="colored"
+          stacked // Олон мэдэгдэл гарвал давхарлаж харуулна
+        />
+      </BrowserRouter>
+    </AuthProvider>
   );
 }
-
-export default App;

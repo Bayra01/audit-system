@@ -1,8 +1,9 @@
 import { useState } from "react";
-// 1. Axios тохиргоог импортлох
+import { useNavigate } from "react-router-dom"; // Шууд шилжилт хийхийн тулд
 import api from "../axios"; 
 
-export default function RegisterPage({ onRegister, onNavigate }) {
+export default function RegisterPage({ onNavigate }) {
+  const navigate = useNavigate();
   const [form, setForm] = useState({
     username: "",
     email: "",
@@ -18,10 +19,10 @@ export default function RegisterPage({ onRegister, onNavigate }) {
   }
 
   async function handleRegister(e) {
-    e.preventDefault();
+    if (e) e.preventDefault();
     setError("");
 
-    // Шаардлагатай шалгалтууд
+    // Баталгаажуулалт
     if (!form.username || !form.email || !form.password) {
       setError("Бүх талбарыг бөглөнө үү");
       return;
@@ -34,21 +35,20 @@ export default function RegisterPage({ onRegister, onNavigate }) {
     setLoading(true);
 
     try {
-      // 2. localStorage-ийн оронд API хүсэлт илгээх
-      // Backend дээрх /register зам (route) руу мэдээллийг явуулна
-      await api.post("/register", {
-        username: form.username,
-        email: form.email,
+      // Backend-ийн бүтцээс хамаарч /auth/register эсвэл /register байна
+      await api.post("/auth/register", {
+        username: form.username.trim(),
+        email: form.email.trim(),
         password: form.password,
         role: form.role
       });
 
-      // 3. Амжилттай бол мэдэгдэл харуулаад нэвтрэх хуудас руу шилжинэ
       alert("Бүртгэл амжилттай үүслээ! ✅");
-      onRegister?.(); // Энэ нь App.jsx-ийн setPage("login")-ийг ажиллуулна
+      
+      // Бүртгүүлсний дараа шууд нэвтрэх хуудас руу шилжинэ
+      navigate("/login");
       
     } catch (err) {
-      // 4. Серверээс ирсэн алдааны мессежийг харуулах (Жишээ нь: "Имэйл бүртгэлтэй байна")
       const msg = err.response?.data?.message || "Бүртгэх үед алдаа гарлаа.";
       setError(msg);
     } finally {
@@ -116,10 +116,11 @@ export default function RegisterPage({ onRegister, onNavigate }) {
           type="password" 
           value={form.confirm} 
           onChange={e => handleChange("confirm", e.target.value)} 
+          onKeyDown={e => e.key === "Enter" && !loading && handleRegister()}
           disabled={loading}
         />
 
-        {error && <div className="login-err">{error}</div>}
+        {error && <div className="login-err" style={{ color: 'red', fontSize: '12px', marginBottom: '10px' }}>{error}</div>}
 
         <button className="login-btn" onClick={handleRegister} disabled={loading}>
           {loading ? "Бүртгэж байна..." : "Бүртгүүлэх →"}
