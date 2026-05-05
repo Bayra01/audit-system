@@ -686,8 +686,16 @@ export default function Dashboard() {
   }, [location.pathname]);
 
   const [data, setData] = useState(SEED.map(x => ({ ...x })));
+  const [violationCount, setViolationCount] = useState(0);
   const [modal, setModal] = useState({ open: false, title: "", initial: {}, editId: null });
   const [editModal, setEditModal] = useState({ open: false, item: null });
+
+  // Sidebar badge-д зориулж нийт зөрчлийн тоог backend-с авах
+  useEffect(() => {
+    api.get("/violations?page=1&limit=1")
+      .then(res => setViolationCount(res.data.totalItems ?? 0))
+      .catch(() => {});
+  }, []);
   const saveV = async (formData) => {
     // 1. Validation: Хоосон утга илгээхээс сэргийлэх
     if (!formData.number?.trim()) {
@@ -751,6 +759,7 @@ export default function Dashboard() {
         }, ...prev]);
 
         toast.success("Зөрчил амжилттай бүртгэгдлээ ✓");
+        setViolationCount(prev => prev + filledRows.length);
       }
 
       // Амжилттай болсон бол Modal-ыг хаах
@@ -768,6 +777,7 @@ export default function Dashboard() {
     try {
       await api.delete(`/violations/${id}`);
       setData(prev => prev.filter(x => x.id !== id));
+      setViolationCount(prev => Math.max(0, prev - 1));
       toast.info("Устгагдлаа");
     } catch (err) {
       toast.error(err.response?.data?.message || 'Устгахад алдаа гарлаа.');
@@ -862,7 +872,7 @@ export default function Dashboard() {
         <div style={{ padding: "14px 0 10px" }}>
           <div style={{ padding: "4px 20px 8px", fontSize: 10, color: "#4a5568", letterSpacing: "0.08em", textTransform: "uppercase" }}>Үндсэн</div>
           <NavItem icon="📊" label="Тайлан" active={tab === "dashboard"} onClick={() => navigate("/dashboard")} />
-          <NavItem icon="⚠️" label="Бүх зөрчил" active={tab === "violations"} onClick={() => navigate("/dashboard/violations")} badge={data.length} />
+          <NavItem icon="⚠️" label="Бүх зөрчил" active={tab === "violations"} onClick={() => navigate("/dashboard/violations")} badge={violationCount} />
         </div>
 
         <div style={{ padding: "10px 0" }}>
