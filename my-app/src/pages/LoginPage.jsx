@@ -1,10 +1,10 @@
 import { useState, useEffect } from "react";
-import { useLocation, useNavigate } from "react-router-dom"; 
-import api from "../axios";
+import { useLocation, useNavigate } from "react-router-dom";
+import api from "../api/axios";
 import { useAuth } from "../context/AuthContext";
-import { toast } from 'react-toastify'; 
+import { toast } from 'react-toastify';
 
-export default function LoginPage({ onNavigate }) {
+export default function LoginPage() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -14,12 +14,12 @@ export default function LoginPage({ onNavigate }) {
   const location = useLocation();
   const navigate = useNavigate();
 
-  // 1. Dashboard руу нэвтрээгүй орох үед харуулах ЦОРЫН ГАНЦ Toast
   useEffect(() => {
     if (location.state?.fromDashboard) {
-      toast.info("Та эхлээд нэвтрэнэ үү!", { toastId: "auth-msg" });
-      
-      // Дахин дахин гаргахгүйн тулд state-ийг цэвэрлэх
+      toast.info("Нэвтрэнэ үү!", {
+        toastId: "auth-msg",
+        style: { fontSize: "15px", minHeight: "60px" },
+      });
       navigate(location.pathname, { replace: true, state: {} });
     }
   }, [location, navigate]);
@@ -28,7 +28,6 @@ export default function LoginPage({ onNavigate }) {
     setError("");
     const u = username.trim();
 
-    // Талбаруудыг шалгах - Зөвхөн текстээр алдаа харуулна
     if (!u || !password) {
       setError("Бүх талбарыг бөглөнө үү");
       return;
@@ -37,22 +36,35 @@ export default function LoginPage({ onNavigate }) {
     setLoading(true);
 
     try {
-      const response = await api.post(`/auth/login`, {
+      const response = await api.post("/auth/login", {
         username: u,
-        password: password
+        password: password,
       });
 
-      if (response.data && response.data.accessToken) {
-        const { user, accessToken } = response.data;
-        // Нэвтрэх үед Toast харуулахгүй байж болно, эсвэл зөвхөн амжилтыг үлдээж болно
-        signIn(user, accessToken);
+      // ✅ ЗАСВАР 1: Backend-ийн response-г console-д харж token нэрийг шалга
+      console.log("Login response:", response.data);
+
+      // ✅ ЗАСВАР 2: token эсвэл accessToken хоёуланг нь дэмжих
+      const token = response.data?.token || response.data?.accessToken;
+      const user = response.data?.user;
+
+      if (token) {
+        // ✅ ЗАСВАР 3: localStorage давхар хадгалахгүй — signIn() дотор хадгалдаг
+        signIn(user, token);
+
+        toast.success("Амжилттай нэвтэрлээ! 🎉");
+        navigate("/dashboard", { replace: true });
       } else {
-        setError("Нэвтрэх мэдээлэл дутуу ирлээ.");
+        setError("Токен олдсонгүй. Backend-ийн response-г шалгана уу.");
+        console.error("Response бүтэц:", response.data);
       }
 
     } catch (err) {
-      // Серверээс ирсэн алдааг зөвхөн setError-т өгнө[cite: 2]
-      const msg = err.response?.data?.message || "Сервертэй холбогдоход алдаа гарлаа";
+      console.error("Login error:", err.response?.data || err.message);
+      const msg =
+        err.response?.data?.message ||
+        err.response?.data?.error ||
+        "Сервертэй холбогдоход алдаа гарлаа.";
       setError(msg);
     } finally {
       setLoading(false);
@@ -91,25 +103,35 @@ export default function LoginPage({ onNavigate }) {
           placeholder="••••••••"
         />
 
-        {/* Улаан алдааны бичиг хэвээрээ үлдэнэ */}
+        <div style={{ textAlign: "right", marginBottom: "15px" }}>
+          <span
+            onClick={() => navigate("/forgot-password")}
+            style={{ fontSize: "12px", color: "#888", cursor: "pointer", textDecoration: "underline" }}
+          >
+            Нууц үгээ мартсан уу?
+          </span>
+        </div>
+
         {error && (
-          <div className="login-err" style={{ color: '#ff4d4d', fontSize: '13px', marginBottom: '15px', fontWeight: '500' }}>
+          <div className="login-err" style={{
+            color: '#ff4d4d',
+            fontSize: '13px',
+            marginBottom: '15px',
+            fontWeight: '500',
+            textAlign: 'center'
+          }}>
             ⚠️ {error}
           </div>
         )}
 
-        <button
-          className="login-btn"
-          onClick={doLogin}
-          disabled={loading}
-        >
+        <button className="login-btn" onClick={doLogin} disabled={loading}>
           {loading ? "Түр хүлээнэ үү..." : "Нэвтрэх →"}
         </button>
 
-        <p style={{ textAlign: "center", fontSize: "13px", marginTop: "20px", color: "#666" }}>
+        <p style={{ textAlign: "center", fontSize: "13px", marginTop: "25px", color: "#666" }}>
           Бүртгэлгүй юу?{" "}
           <span
-            onClick={onNavigate}
+            onClick={() => navigate("/register")}
             style={{ color: "#00bcd4", cursor: "pointer", fontWeight: "bold", textDecoration: "underline" }}
           >
             Бүртгүүлэх
