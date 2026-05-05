@@ -78,7 +78,7 @@ export default function DashboardPage({ data }) {
                   fontSize: 13, color: "#222", fontWeight: 500,
                   whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
                 }}>
-                  {x.name}
+                  {x.name || x.title}
                 </div>
                 <div style={{ fontSize: 11, color: "#aaa" }}>{x.type}</div>
               </div>
