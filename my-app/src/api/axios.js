@@ -1,7 +1,8 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api',
+  // Backend порт 3000 биш бол энд заавал өөрчлөх хэрэгтэй
+  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api', 
   withCredentials: true,
 });
 

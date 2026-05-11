@@ -60,11 +60,13 @@ export default function LoginPage() {
       }
 
     } catch (err) {
-      console.error("Login error:", err.response?.data || err.message);
+      console.error("Login detail error:", err);
       const msg =
         err.response?.data?.message ||
         err.response?.data?.error ||
-        "Сервертэй холбогдоход алдаа гарлаа.";
+        (err.message === "Network Error" 
+          ? "Сервертэй холбогдож чадсангүй. Сервер асаагүй эсвэл URL буруу байна." 
+          : "Сервертэй холбогдоход алдаа гарлаа.");
       setError(msg);
     } finally {
       setLoading(false);
