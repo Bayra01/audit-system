@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import api from "../api/axios";
 import { useAuth } from "../context/AuthContext";
 import { toast } from 'react-toastify';
+import axios from "axios";
 
 export default function LoginPage() {
   const [username, setUsername] = useState("");
@@ -25,54 +26,56 @@ export default function LoginPage() {
   }, [location, navigate]);
 
   async function doLogin() {
-    setError("");
-    const u = username.trim();
+  setError("");
+  const u = username.trim();
 
-    if (!u || !password) {
-      setError("Бүх талбарыг бөглөнө үү");
-      return;
-    }
-
-    setLoading(true);
-
-    try {
-      const response = await api.post("/auth/login", {
-        username: u,
-        password: password,
-      });
-
-      // ✅ ЗАСВАР 1: Backend-ийн response-г console-д харж token нэрийг шалга
-      console.log("Login response:", response.data);
-
-      // ✅ ЗАСВАР 2: token эсвэл accessToken хоёуланг нь дэмжих
-      const token = response.data?.token || response.data?.accessToken;
-      const user = response.data?.user;
-
-      if (token) {
-        // ✅ ЗАСВАР 3: localStorage давхар хадгалахгүй — signIn() дотор хадгалдаг
-        signIn(user, token);
-
-        toast.success("Амжилттай нэвтэрлээ! 🎉");
-        navigate("/dashboard", { replace: true });
-      } else {
-        setError("Токен олдсонгүй. Backend-ийн response-г шалгана уу.");
-        console.error("Response бүтэц:", response.data);
-      }
-
-    } catch (err) {
-      console.error("Login detail error:", err);
-      const msg =
-        err.response?.data?.message ||
-        err.response?.data?.error ||
-        (err.message === "Network Error" 
-          ? "Сервертэй холбогдож чадсангүй. Сервер асаагүй эсвэл URL буруу байна." 
-          : "Сервертэй холбогдоход алдаа гарлаа.");
-      setError(msg);
-    } finally {
-      setLoading(false);
-    }
+  if (!u || !password) {
+    setError("Бүх талбарыг бөглөнө үү");
+    return;
   }
 
+  setLoading(true);
+
+  try {
+    // 🔴 АЛДАА: Энд 'await' орхигдсон байсан
+    // Мөн api.post-оо ашиглах нь илүү дээр (interceptors ажиллахын тулд)
+    const response = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/auth/login`, {
+      username: u,
+      password: password,
+    });
+
+    console.log("Login response data:", response.data);
+
+    // Backend-ээс ирж буй түлхүүр үгсийг (key) шалгах
+    const token = response.data?.token || response.data?.accessToken;
+    const user = response.data?.user;
+
+    if (token) {
+      // AuthContext-ийн signIn функц рүү дамжуулах
+      signIn(user, token);
+
+      toast.success("Амжилттай нэвтэрлээ! 🎉");
+      
+      // Navigate хийхээс өмнө бага зэрэг хүлээх эсвэл шууд шилжих
+      navigate("/dashboard", { replace: true });
+    } else {
+      setError("Токен олдсонгүй. Backend-ийн response-г шалгана уу.");
+    }
+
+  } catch (err) {
+    console.error("Login detail error:", err);
+    // Сүлжээний эсвэл серверийн алдааг барих
+    const msg =
+      err.response?.data?.message ||
+      err.response?.data?.error ||
+      (err.message === "Network Error" 
+        ? "Сервертэй холбогдож чадсангүй. URL эсвэл Сүлжээгээ шалгана уу." 
+        : "Нэвтрэхэд алдаа гарлаа.");
+    setError(msg);
+  } finally {
+    setLoading(false);
+  }
+}
   return (
     <div id="loginPage">
       <div className="login-card">

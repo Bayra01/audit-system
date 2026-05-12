@@ -1,12 +1,13 @@
 import axios from 'axios';
 
+// IP хаягийг динамикаар авах (Network Error-оос сэргийлнэ)
+const BASE_URL = import.meta.env.VITE_API_BASE_URL || `http://${window.location.hostname}:3000/api`;
+
 const api = axios.create({
-  // Backend порт 3000 биш бол энд заавал өөрчлөх хэрэгтэй
-  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api', 
-  withCredentials: true,
+  baseURL: BASE_URL, 
+  withCredentials: false, // ← CORS засах хүртэл false. Backend credentials:true болгосны дараа true буцаа
 });
 
-// Шинэ токен авах хүртэл бусад хүсэлтүүдийг түр хүлээлгэх дараалал
 let isRefreshing = false;
 let failedQueue = [];
 
@@ -39,15 +40,20 @@ api.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
+    // Сүлжээний алдаа (Server унтарсан үед)
+    if (!error.response) {
+      return Promise.reject(error);
+    }
+
     const skipRetry =
       originalRequest.url?.includes('/auth/login') ||
       originalRequest.url?.includes('/auth/refresh') ||
       originalRequest.url?.includes('/auth/signup');
 
-    if (error.response?.status === 401 && !originalRequest._retry && !skipRetry) {
+    // 401 алдаа гарсан бөгөөд өмнө нь дахин оролдоогүй бол
+    if (error.response.status === 401 && !originalRequest._retry && !skipRetry) {
 
       if (isRefreshing) {
-        // Хэрэв refresh хийгдэж байвал бусад хүсэлтүүдийг хүлээлгэнэ
         return new Promise((resolve, reject) => {
           failedQueue.push({ resolve, reject });
         })
@@ -62,8 +68,9 @@ api.interceptors.response.use(
       isRefreshing = true;
 
       try {
+        // refresh хүсэлтийг api биш axios-оор шууд явуулах нь interceptor-ын гогцооноос сэргийлнэ
         const response = await axios.post(
-          `${api.defaults.baseURL}/auth/refresh`,
+          `${BASE_URL}/auth/refresh`,
           {},
           { withCredentials: true }
         );
@@ -71,18 +78,19 @@ api.interceptors.response.use(
         const { accessToken } = response.data;
         localStorage.setItem('accessToken', accessToken);
 
+        // Header-үүдийг шинэчлэх
+        api.defaults.headers.common['Authorization'] = `Bearer ${accessToken}`;
         originalRequest.headers.Authorization = `Bearer ${accessToken}`;
 
-        // Дараалалд байсан бүх хүсэлтийг шинэ токеноор үргэлжлүүлнэ
         processQueue(null, accessToken);
-
+        isRefreshing = false; // 🔥 ЧУХАЛ: Дараагийн refresh-д зориулж чөлөөлөх
+        
         return api(originalRequest);
-        // axios.js - catch блок дотор:
       } catch (refreshError) {
         processQueue(refreshError, null);
-        // localStorage.clear(); // Үүний оронд:
+        isRefreshing = false; // 🔥 ЧУХАЛ: Алдаа гарсан ч чөлөөлөх
+        
         localStorage.removeItem('accessToken');
-
         if (window.location.pathname !== '/login') {
           window.location.href = '/login';
         }

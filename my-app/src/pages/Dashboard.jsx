@@ -10,7 +10,6 @@ import EmailPage from "./dashboard/EmailPage";
 // ════════════════════════════════════════════════════════
 // ТОГТМОЛУУД
 // ════════════════════════════════════════════════════════
-const today = () => new Date().toISOString().split("T")[0];
 
 export const SEV_MAP = {
   low: { label: "Бага", bg: "#e8f8f0", color: "#1a7a45", dot: "#2ecc71" },
@@ -24,21 +23,7 @@ export const STAT_MAP = {
   pending: { label: "Шалгагдаж буй", bg: "#f4ecf7", color: "#6c3483", dot: "#9b59b6" },
   resolved: { label: "Шийдвэрлэсэн", bg: "#e8f8f0", color: "#1a7a45", dot: "#2ecc71" },
 };
-const SEED = [
-  { id: 1, name: "Зөвшөөрөлгүй нэвтрэх оролдлого", type: "Security", severity: "high", date: today(), status: "new" },
-  { id: 2, name: "Системийн удаашрал", type: "Performance", severity: "medium", date: today(), status: "resolved" },
-  { id: 3, name: "Өгөгдөл алдагдах эрсдэл", type: "Data", severity: "critical", date: today(), status: "pending" },
-  { id: 4, name: "Ватсапп группээр мэдээлэл задруулсан", type: "Security", severity: "high", date: today(), status: "new" },
-  { id: 5, name: "Дотоод сүлжээний тасалдал", type: "Infrastructure", severity: "medium", date: today(), status: "resolved" },
-  { id: 6, name: "Серверийн диск дүүрсэн", type: "Infrastructure", severity: "high", date: today(), status: "pending" },
-  { id: 7, name: "Ажилтан ажлын байранд унтсан", type: "HR", severity: "low", date: today(), status: "new" },
-  { id: 8, name: "Санхүүгийн программ гацсан", type: "Software", severity: "high", date: today(), status: "pending" },
-  { id: 9, name: "Нууц үг алдагдсан байж болзошгүй", type: "Security", severity: "critical", date: today(), status: "new" },
-  { id: 10, name: "Тайлан хоцроосон", type: "Management", severity: "low", date: today(), status: "resolved" },
-  { id: 11, name: "Хэрэглэгчийн мэдээлэл буруу бүртгэгдсэн", type: "Data", severity: "medium", date: today(), status: "pending" },
-  { id: 12, name: "API хариу өгөхгүй байна", type: "Performance", severity: "high", date: today(), status: "new" },
-  { id: 13, name: "Цаг бүртгэлийн төхөөрөмж эвдэрсэн", type: "Hardware", severity: "medium", date: today(), status: "new" },
-];
+
 
 // ════════════════════════════════════════════════════════
 // ТУСЛАХ КОМПОНЕНТУУД
@@ -685,10 +670,12 @@ export default function Dashboard() {
     setTab(getTabFromUrl(location.pathname));
   }, [location.pathname]);
 
-  const [data, setData] = useState(SEED.map(x => ({ ...x })));
   const [violationCount, setViolationCount] = useState(0);
   const [modal, setModal] = useState({ open: false, title: "", initial: {}, editId: null });
   const [editModal, setEditModal] = useState({ open: false, item: null });
+  // ViolationsPage-д fetch trigger хийхэд ашиглана
+  const [refreshKey, setRefreshKey] = useState(0);
+  const triggerRefresh = () => setRefreshKey(k => k + 1);
 
   // Sidebar badge-д зориулж нийт зөрчлийн тоог backend-с авах
   useEffect(() => {
@@ -738,32 +725,17 @@ export default function Dashboard() {
         response = await api.put(`/violations/${modal.editId}/status`, {
           status: formData.status || 'new'
         });
-        setData(prev => prev.map(x =>
-          x.id === modal.editId ? { ...x, ...payload, id: x.id } : x
-        ));
         toast.success("Амжилттай шинэчлэгдлээ ✓");
       } else {
         // ── ШИНЭЭР ҮҮСГЭХ ЛОГИК ──
         response = await api.post('/violations', payload);
-
-        const newGroupId = response.data.groupId || Date.now();
-
-        setData(prev => [{
-          id: newGroupId,
-          name: payload.violations[0].title,
-          type: "Зөрчил",
-          severity: payload.rating,
-          date: new Date().toISOString().split('T')[0],
-          status: payload.status,
-          ...payload
-        }, ...prev]);
-
         toast.success("Зөрчил амжилттай бүртгэгдлээ ✓");
         setViolationCount(prev => prev + filledRows.length);
       }
 
-      // Амжилттай болсон бол Modal-ыг хаах
+      // Амжилттай болсон бол Modal-ыг хааж, ViolationsPage-г дахин fetch хийлгэнэ
       setModal({ ...modal, open: false });
+      triggerRefresh();
 
     } catch (err) {
       // Axios Interceptor-оор ирэх алдааны мессеж
@@ -776,9 +748,9 @@ export default function Dashboard() {
     if (!window.confirm("Устгахдаа итгэлтэй байна уу?")) return;
     try {
       await api.delete(`/violations/${id}`);
-      setData(prev => prev.filter(x => x.id !== id));
       setViolationCount(prev => Math.max(0, prev - 1));
       toast.info("Устгагдлаа");
+      triggerRefresh();
     } catch (err) {
       toast.error(err.response?.data?.message || 'Устгахад алдаа гарлаа.');
     }
@@ -955,15 +927,15 @@ export default function Dashboard() {
         <div style={{ flex: 1, overflowY: "auto", padding: "24px 28px" }}>
 
           {/* ── DASHBOARD TAB ── */}
-          {tab === "dashboard" && <DashboardPage data={data} />}
+          {tab === "dashboard" && <DashboardPage refreshKey={refreshKey} />}
 
           {/* ── VIOLATIONS TAB ── */}
           {tab === "violations" && (
             <ViolationsPage
-              data={data}
               onAdd={(modalState) => setModal(modalState)}
               onEdit={editV}
               onDelete={delV}
+              refreshKey={refreshKey}
             />
           )}
 
@@ -1021,28 +993,9 @@ export default function Dashboard() {
 
               // PUT /violations/:id — бүх талбарыг шинэчлэх
               await api.put(`/violations/${updated.id}`, payload);
-
-              setData(prev => prev.map(x =>
-                x.id === updated.id
-                  ? {
-                      ...x,
-                      name: updated.name,
-                      severity: updated.severity,
-                      status: updated.status,
-                      type: updated.type || x.type,
-                      description: updated.description,
-                      department: updated.department,
-                      action_plan: updated.action,
-                      assignee_name: updated.assignee,
-                      assignee_email: updated.assigneeEmail,
-                      manager_name: updated.managerName,
-                      execution_response: updated.executionResponse,
-                      due_date: updated.dueDate,
-                    }
-                  : x
-              ));
               toast.success("Амжилттай шинэчлэгдлээ ✓");
               setEditModal({ open: false, item: null });
+              triggerRefresh();
             } catch (err) {
               const status = err.response?.status;
               // 404 бол route байхгүй гэсэн үг — backend-д PUT /violations/:id нэмэх хэрэгтэй
