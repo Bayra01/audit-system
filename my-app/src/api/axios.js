@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 // IP хаягийг динамикаар авах (Network Error-оос сэргийлнэ)
-const BASE_URL = import.meta.env.VITE_API_BASE_URL || `http://${window.location.hostname}:3000/api`;
+const BASE_URL = import.meta.env.VITE_API_BASE_URL || `http://${window.location.hostname}:3000`;
 
 const api = axios.create({
   baseURL: BASE_URL, 

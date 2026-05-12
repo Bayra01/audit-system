@@ -1,72 +1,71 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
+import api from "../api/axios";
 
 export default function ForgotPassword() {
   const navigate = useNavigate();
-  
-  // Утасны хэсгийг устгаж, зөвхөн имэйл дээр төвлөрөв
-  const [step, setStep] = useState("identify"); 
-  const [email, setEmail] = useState(""); 
+
+  const [step, setStep] = useState("identify");
+  const [email, setEmail] = useState("");
   const [otp, setOtp] = useState("");
   const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  // 1. Код илгээх (Identify)
-  const handleSendCode = (e) => {
-    e.preventDefault();
-    setError(""); 
+  // 1. OTP код илгээх
+  const handleSendCode = async (e) => {
+    e?.preventDefault();
+    setError("");
+    if (!email) { setError("Имэйл хаягаа оруулна уу!"); return; }
 
-    if (!email) {
-      setError("Имэйл хаягаа оруулна уу!");
-      return;
+    setLoading(true);
+    try {
+      await api.post("/auth/forgot-password", { email });
+      toast.success("Баталгаажуулах код имэйл рүү илгээгдлээ ✓");
+      setStep("otp");
+      setOtp("");
+    } catch (err) {
+      setError(err?.response?.data?.message || "Код илгээхэд алдаа гарлаа.");
+    } finally {
+      setLoading(false);
     }
-    
-    // Имэйл формат шалгах (заавал биш ч байвал зүгээр)
-    if (!email.includes("@")) {
-      setError("Зөв имэйл хаяг оруулна уу!");
-      return;
-    }
-
-    console.log(`Имэйл рүү код илгээв: ${email}`);
-    setStep("otp");
   };
 
-  // 2. Код шалгах (OTP)
-  const handleVerifyOtp = (e) => {
+  // 2. OTP + Шинэ нууц үг — нэг алхамд шийдэх
+  // 3. Шинэ нууц үг хадгалах
+  const handleResetPassword = async (e) => {
     e.preventDefault();
     setError("");
 
-    if (otp.length < 4 || otp.length > 6) {
-      setError("Баталгаажуулах код 4-6 тэмдэгт байх ёстой.");
-      return;
-    }
+    if (newPassword.length < 6) { setError("Нууц үг дор хаяж 6 тэмдэгт байх ёстой."); return; }
+    if (newPassword !== confirmPassword) { setError("Нууц үг таарахгүй байна."); return; }
 
-    const finalOtp = otp.toUpperCase();
-    if (finalOtp === "A1B2" || finalOtp === "123456") { 
-      setStep("reset");
-    } else {
-      setError("Буруу код байна!");
+    setLoading(true);
+    try {
+      // Backend-ийн хүлээж авч буй нэршлүүдээр (otp, password, confirmPassword) илгээх
+      await api.post("/auth/reset-password", { 
+        email, 
+        otp, 
+        password: newPassword, // Backend дээр 'newPass = newPassword || password' гэж байгаа тул 'password' гэж явуулахад болно
+        confirmPassword 
+      });
+
+      toast.success("Нууц үг амжилттай шинэчлэгдлээ! Нэвтэрч орно уу.", { autoClose: 3000 });
+      navigate("/login");
+    } catch (err) {
+      setError(err?.response?.data?.message || "Нууц үг шинэчлэхэд алдаа гарлаа.");
+    } finally {
+      setLoading(false);
     }
   };
 
-  // 3. Нууц үг шинэчлэх (Reset)
-  const handleResetPassword = (e) => {
-    e.preventDefault();
-    setError("");
-
-    if (newPassword.length < 6) {
-      setError("Нууц үг дор хаяж 6 тэмдэгт байх ёстой.");
-      return;
-    }
-    
-    toast.success("Нууц үг амжилттай шинэчлэгдлээ! Та нэвтэрч орно уу.", {
-      position: "top-right",
-      autoClose: 3000
-    });
-
-    navigate("/login");
-  };
+  const steps = [
+    { key: "identify", label: "Имэйл" },
+    { key: "otp",      label: "Шинэ нууц үг" },
+  ];
+  const currentIdx = steps.findIndex(s => s.key === step);
 
   return (
     <div id="loginPage">
@@ -76,79 +75,133 @@ export default function ForgotPassword() {
           <div className="login-brand-text">Аюулгүй байдал</div>
         </div>
 
-        {/* АЛХАМ 1: ИМЭЙЛ ОРУУЛАХ */}
+        {/* Алхамын мөр */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, marginBottom: 24 }}>
+          {steps.map((s, i) => {
+            const done   = currentIdx > i;
+            const active = currentIdx === i;
+            return (
+              <div key={s.key} style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <div style={{
+                  width: 26, height: 26, borderRadius: "50%", fontSize: 11, fontWeight: 700,
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  background: done ? "#2ecc71" : active ? "#3498db" : "#eee",
+                  color: done || active ? "#fff" : "#aaa",
+                  transition: "all 0.3s",
+                }}>
+                  {done ? "✓" : i + 1}
+                </div>
+                <span style={{ fontSize: 11, color: active ? "#3498db" : done ? "#2ecc71" : "#aaa", fontWeight: active ? 600 : 400 }}>
+                  {s.label}
+                </span>
+                {i < steps.length - 1 && (
+                  <div style={{ width: 20, height: 1, background: done ? "#2ecc71" : "#eee", transition: "background 0.3s" }} />
+                )}
+              </div>
+            );
+          })}
+        </div>
+
+        {/* ── АЛХАМ 1: ИМЭЙЛ ── */}
         {step === "identify" && (
           <>
             <div className="login-h" style={{ fontSize: "18px" }}>Нууц үг сэргээх</div>
             <p style={{ fontSize: "13px", color: "#666", marginBottom: "20px", textAlign: "center" }}>
               Бүртгэлтэй имэйл хаягаа оруулж баталгаажуулах код авна уу.
             </p>
-
             <form onSubmit={handleSendCode}>
               <label className="f-label">Имэйл хаяг</label>
               <input
                 className="f-input"
                 type="email"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="example@mail.com"
+                onChange={e => setEmail(e.target.value)}
+                placeholder="example@tavanbogd.com"
+                disabled={loading}
               />
-              {error && <div style={{ color: '#ff4d4d', fontSize: '13px', marginBottom: '10px' }}>⚠️ {error}</div>}
-              <button type="submit" className="login-btn">Код илгээх</button>
+              {error && <div style={{ color: "#ff4d4d", fontSize: "13px", marginBottom: "10px" }}>⚠️ {error}</div>}
+              <button type="submit" className="login-btn" disabled={loading}>
+                {loading ? "Илгээж байна..." : "Код илгээх"}
+              </button>
             </form>
           </>
         )}
 
-        {/* АЛХАМ 2: OTP ШАЛГАХ */}
+        {/* ── АЛХАМ 2: КОД + ШИНЭ НУУЦ ҮГ — нэг дор ── */}
         {step === "otp" && (
           <>
-            <div className="login-h">Баталгаажуулах</div>
-            <p style={{ fontSize: "13px", color: "#666", textAlign: "center" }}>
-              <b>{email}</b> хаягт ирсэн кодыг оруулна уу.
+            <div className="login-h">Нууц үг шинэчлэх</div>
+            <p style={{ fontSize: "13px", color: "#666", textAlign: "center", marginBottom: 16 }}>
+              <b>{email}</b> хаягт ирсэн кодыг болон шинэ нууц үгээ оруулна уу.
             </p>
-            <form onSubmit={handleVerifyOtp}>
+            <form onSubmit={handleResetPassword}>
+              {/* OTP */}
+              <label className="f-label">Баталгаажуулах код</label>
               <input
                 className="f-input"
-                style={{ 
-                  textAlign: "center", 
-                  fontSize: "20px", 
-                  letterSpacing: "4px",
-                  textTransform: "uppercase"
-                }}
+                style={{ textAlign: "center", fontSize: "24px", letterSpacing: "8px", fontWeight: 700 }}
                 type="text"
                 maxLength="6"
                 value={otp}
-                onChange={(e) => setOtp(e.target.value)}
-                placeholder="A1B2C3"
+                onChange={e => setOtp(e.target.value.replace(/\D/g, ""))}
+                placeholder="······"
+                disabled={loading}
               />
-              {error && <div style={{ color: '#ff4d4d', fontSize: '13px', marginBottom: '10px', textAlign: 'center' }}>⚠️ {error}</div>}
-              <button type="submit" className="login-btn">Баталгаажуулах</button>
-              <p onClick={() => { setStep("identify"); setError(""); setOtp(""); }} style={{ textAlign: "center", color: "#00bcd4", cursor: "pointer", fontSize: "12px", marginTop: "10px" }}>Буцах</p>
-            </form>
-          </>
-        )}
 
-        {/* АЛХАМ 3: ШИНЭ НУУЦ ҮГ */}
-        {step === "reset" && (
-          <>
-            <div className="login-h">Шинэ нууц үг</div>
-            <form onSubmit={handleResetPassword}>
-              <label className="f-label">Шинэ нууц үг тохируулах</label>
+              {/* Шинэ нууц үг */}
+              <label className="f-label" style={{ marginTop: 12 }}>Шинэ нууц үг</label>
               <input
                 className="f-input"
                 type="password"
                 value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
+                onChange={e => setNewPassword(e.target.value)}
                 placeholder="••••••••"
+                disabled={loading}
               />
-              {error && <div style={{ color: '#ff4d4d', fontSize: '13px', marginBottom: '10px' }}>⚠️ {error}</div>}
-              <button type="submit" className="login-btn">Хадгалах</button>
+
+              {/* Нууц үг давтах */}
+              <label className="f-label" style={{ marginTop: 8 }}>Нууц үг давтах</label>
+              <input
+                className="f-input"
+                type="password"
+                value={confirmPassword}
+                onChange={e => setConfirmPassword(e.target.value)}
+                placeholder="••••••••"
+                disabled={loading}
+              />
+
+              {error && (
+                <div style={{ color: "#ff4d4d", fontSize: "13px", marginBottom: "10px", textAlign: "center" }}>
+                  ⚠️ {error}
+                </div>
+              )}
+
+              <button type="submit" className="login-btn" disabled={loading}>
+                {loading ? "Хадгалж байна..." : "Хадгалах"}
+              </button>
+
+              <div style={{ display: "flex", justifyContent: "space-between", marginTop: 12 }}>
+                <span
+                  onClick={() => { if (!loading) { setStep("identify"); setError(""); setOtp(""); } }}
+                  style={{ color: "#aaa", cursor: "pointer", fontSize: "12px" }}
+                >
+                  ← Буцах
+                </span>
+                <span
+                  onClick={() => { if (!loading) handleSendCode(); }}
+                  style={{ color: "#3498db", cursor: "pointer", fontSize: "12px" }}
+                >
+                  Код дахин илгээх
+                </span>
+              </div>
             </form>
           </>
         )}
 
         <div style={{ textAlign: "center", marginTop: "25px" }}>
-          <span onClick={() => navigate("/login")} style={{ color: "#888", cursor: "pointer", fontSize: "13px" }}>Нэвтрэх рүү буцах</span>
+          <span onClick={() => navigate("/login")} style={{ color: "#888", cursor: "pointer", fontSize: "13px" }}>
+            ← Нэвтрэх рүү буцах
+          </span>
         </div>
       </div>
     </div>
